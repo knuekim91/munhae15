@@ -275,6 +275,131 @@ WEEK2 = {
     },
 }
 
+WEEK3 = {
+    "week": 3, "unit": "Ⅰ. 생존 문해력", "topic": "소비자·계약(약관) 읽기",
+
+    "d1": {
+        "tag": "학습①", "intro": "온라인 쇼핑, 휴대폰 개통, 아르바이트 계약서에는 낯선 소비자·계약 용어가 자주 나와요. 6개 어휘부터 익혀 봅시다.",
+        "words": [
+            {"term": "약관", "hanja": "約款·맺을약·항목관", "definition": "계약 당사자가 지켜야 할 사항을 미리 정해 놓은 조항.", "example": "가입 전에 이용 {}을 꼼꼼히 읽어야 한다."},
+            {"term": "계약", "hanja": "契約·맺을계·맺을약", "definition": "서로 지켜야 할 의무를 글이나 말로 정하여 둠.", "example": "아르바이트를 시작하기 전에 근로 {}을 맺었다."},
+            {"term": "배송", "hanja": "配送·나눌배·보낼송", "definition": "물건을 보내 줌.", "example": "주문한 물건의 {}이 하루 늦어졌다."},
+            {"term": "하자", "hanja": "瑕疵·티하·흠자", "definition": "흠이나 잘못. 정상적인 상태를 갖추지 못한 결점.", "example": "새로 산 신발에서 {}를 발견했다."},
+            {"term": "반품", "hanja": "返品·돌이킬반·물건품", "definition": "사들인 물건을 도로 돌려보냄.", "example": "사이즈가 맞지 않아 {}을 신청했다."},
+            {"term": "교환", "hanja": "交換·사귈교·바꿀환", "definition": "서로 바꿈.", "example": "색상이 마음에 안 들어 다른 색으로 {}했다."},
+        ],
+        "checkpoints": [
+            {"options": ("약관", "계약"), "template": "물건을 사기 전에 이용 {0}을 꼼꼼히 읽어야 하고, 아르바이트를 할 때는 근로 {1}서를 반드시 작성해야 한다."},
+            {"options": ("배송", "하자"), "template": "주문한 물건의 {0}이 늦어지더니, 막상 받아 보니 제품에 {1}까지 있었다."},
+            {"options": ("반품", "교환"), "template": "사이즈가 맞지 않아 {0}을 신청했는데, 매장에서는 환불 대신 다른 사이즈로 {1}해 주겠다고 했다."},
+        ],
+        "quote": {"text": "악마는 디테일에 있다.", "author": "서양 격언"},
+    },
+
+    "d2": {
+        "tag": "학습②", "intro": "어제 배운 6개에 이어, 나머지 6개 어휘를 익혀 봅시다.",
+        "words": [
+            {"term": "청약", "hanja": "請約·청할청·맺을약", "definition": "계약을 맺자는 의사 표시.", "example": "인터넷으로 상품 구매 {}을 했다."},
+            {"term": "철회", "hanja": "撤回·거둘철·돌아올회", "definition": "이미 낸 의사 표시를 거두어들이거나 취소함.", "example": "마음이 바뀌어 주문을 {}했다."},
+            {"term": "위약금", "hanja": "違約金·어길위·맺을약·돈금", "definition": "계약을 지키지 않을 경우 벌로 물어야 하는 돈.", "example": "계약을 중도에 해지하면 {}을 내야 한다."},
+            {"term": "면책", "hanja": "免責·면할면·꾸짖을책", "definition": "책임이나 책망을 면함.", "example": "천재지변으로 인한 피해는 {} 조항에 해당한다."},
+            {"term": "손해배상", "hanja": "損害賠償·덜손·물어줄배", "definition": "남에게 끼친 손해를 물어 줌.", "example": "물건이 파손되어 {}을 청구했다."},
+            {"term": "소비자", "hanja": "消費者·쓸비·사람자", "definition": "재화나 용역을 돈을 주고 사서 쓰는 사람.", "example": "{}의 권리를 보호하는 법이 있다."},
+        ],
+        "checkpoints": [
+            {"options": ("청약", "철회"), "template": "인터넷으로 상품 구매 {0}을 했다가, 마음이 바뀌어 다음 날 바로 {1}했다."},
+            {"options": ("위약금", "면책"), "template": "계약을 중도에 해지하면 {0}을 내야 하지만, 천재지변 등은 {1} 조항에 해당해 예외로 인정된다."},
+            {"options": ("손해배상", "소비자"), "template": "택배로 온 물건이 파손되어 {0}을 청구했고, {1} 보호 센터에 상담도 신청했다."},
+        ],
+        "confusable": {
+            "left": {"term": "환불", "hanja": "還拂", "definition": "이미 지불한 돈을 그대로 되돌려 줌.", "example": "불량품이라 환불받았다."},
+            "right": {"term": "환급", "hanja": "還給", "definition": "이미 낸 세금이나 요금 중 일부를 돌려줌.", "example": "초과 납부한 세금을 환급받았다."},
+            "tip": "낸 돈 전부를 돌려받으면 환불, 일부만 돌려받으면 환급!",
+        },
+        "quote": {"text": "돌다리도 두들겨 보고 건너라.", "author": "한국 속담"},
+    },
+
+    "d3": {
+        "tag": "확인①", "intro": "이틀 동안 배운 12개 어휘를 세 가지 방식으로 확인해 봅시다.",
+        "sections": [
+            {"title": "① 초성 힌트 — 빈칸에 낱말을 쓰세요", "type": "fill", "items": [
+                {"prompt": "[ㅇㄱ] 지켜야 할 사항을 미리 정한 조항", "hint": "이용 ___을 꼼꼼히 읽는다."},
+                {"prompt": "[ㄱㅇ] 서로 지켜야 할 의무를 정하여 둠", "hint": "근로 ___서를 작성했다."},
+                {"prompt": "[ㅂㅅ] 물건을 보내 줌", "hint": "물건의 ___이 늦어졌다."},
+                {"prompt": "[ㅎㅈ] 흠이나 잘못", "hint": "제품에서 ___를 발견했다."},
+            ]},
+            {"title": "② 글자 카드 조합 — 반·품·교·환·청·약·철·회", "type": "fill", "items": [
+                {"prompt": "사들인 물건을 도로 돌려보냄"},
+                {"prompt": "서로 바꿈"},
+                {"prompt": "계약을 맺자는 의사 표시"},
+                {"prompt": "이미 낸 의사 표시를 거두어들이거나 취소함"},
+            ]},
+            {"title": "③ 문장에 어울리는 어휘 고르기", "type": "choice", "items": [
+                {"prompt": "사이즈가 안 맞아 (　) 을 신청했다.", "options": ["반품", "교환"]},
+                {"prompt": "색상이 안 들어 다른 색으로 (　) 했다.", "options": ["교환", "철회"]},
+                {"prompt": "인터넷으로 상품 구매 (　) 을 했다.", "options": ["청약", "위약금"]},
+                {"prompt": "마음이 바뀌어 주문을 (　) 했다.", "options": ["철회", "면책"]},
+            ]},
+        ],
+        "quote": {"text": "아는 것이 힘이다.", "author": "프랜시스 베이컨"},
+    },
+
+    "d4": {
+        "tag": "확인②", "intro": "밑줄 친 어휘의 뜻을 확인하고, 실제 쇼핑몰 약관 속에서 어떻게 쓰이는지 살펴봅시다.",
+        "sections": [
+            {"title": "④ 밑줄 뜻으로 알맞은 것 고르기", "type": "choice4", "items": [
+                {"prompt": "계약을 중도에 해지하면 위약금을 내야 한다.", "options": ["벌로 무는 돈", "빌려주는 돈", "돌려받는 돈", "이자로 붙는 돈"]},
+                {"prompt": "천재지변으로 인한 피해는 면책 조항에 해당한다.", "options": ["책임을 면함", "책임을 더함", "손해를 물어줌", "계약을 취소함"]},
+                {"prompt": "물건이 파손되어 손해배상을 청구했다.", "options": ["끼친 손해를 물어 줌", "물건을 교환함", "세금을 돌려받음", "계약을 다시 맺음"]},
+                {"prompt": "소비자의 권리를 보호하는 법이 있다.", "options": ["재화·용역을 사서 쓰는 사람", "물건을 만드는 사람", "물건을 파는 사람", "광고를 하는 사람"]},
+            ]},
+        ],
+        "passage": {
+            "title": "⑤ 약관을 읽고 답하세요",
+            "body": [
+                "[온라인 쇼핑몰 이용약관 (발췌)]",
+                "1. 청약 철회: 상품을 받은 날부터 7일 이내 철회 가능",
+                "2. 반품·교환: 하자 있는 경우, 배송받은 날로부터 30일 이내 신청 가능",
+                "3. 환불: 단순 변심 반품은 왕복 배송비를 소비자가 부담",
+                "4. 위약금: 예약 상품을 정당한 사유 없이 취소 시 부과될 수 있음",
+                "5. 면책: 천재지변 등 불가항력으로 인한 배송 지연은 회사 책임 없음",
+                "6. 문의: 고객센터를 통해 상담 가능",
+            ],
+            "items": [
+                {"prompt": "청약을 철회할 수 있는 기간은?", "options": ["받은 날부터 7일 이내", "주문 당일만", "30일 이내 언제든", "기간 제한 없음"]},
+                {"prompt": "하자 제품의 반품·교환 신청 기간은?", "options": ["배송받은 날로부터 30일", "7일 이내", "1년 이내", "신청 불가"]},
+                {"prompt": "단순 변심 반품 시 배송비 부담은?", "options": ["소비자", "회사", "반반 부담", "배송업체"]},
+                {"prompt": "위약금이 부과될 수 있는 경우는?", "options": ["정당한 사유 없이 예약 취소", "제품 하자", "배송 지연", "청약 철회"]},
+                {"prompt": "약관 내용과 일치하지 않는 것은?", "options": ["천재지변 배송 지연도 회사 책임", "하자 제품 30일 이내 반품", "단순 변심 반품비 소비자 부담", "청약 7일 이내 철회 가능"]},
+            ],
+        },
+        "quote": {"text": "이행할 수 있는 것보다 더 많이 약속하지 마라.", "author": "벤저민 프랭클린"},
+    },
+
+    "d5": {
+        "tag": "종합복습", "intro": "이번 주에 배운 12개 어휘를 새로운 문장으로 마지막으로 점검해 봅시다.",
+        "sections": [
+            {"title": "뜻을 보고 어휘를 쓰세요", "type": "fill", "items": [
+                {"prompt": "지켜야 할 사항을 미리 정해 놓은 조항"},
+                {"prompt": "물건을 보내 줌"},
+                {"prompt": "흠이나 잘못"},
+                {"prompt": "이미 낸 의사 표시를 거두어들이거나 취소함"},
+                {"prompt": "계약을 지키지 않을 경우 벌로 물어야 하는 돈"},
+                {"prompt": "재화나 용역을 사서 쓰는 사람"},
+            ]},
+            {"title": "문장을 읽고 알맞은 어휘를 고르세요", "type": "choice", "items": [
+                {"prompt": "이용 (　)을 꼼꼼히 읽어야 한다.", "options": ["약관", "배송"]},
+                {"prompt": "주문한 물건의 (　)이 늦어졌다.", "options": ["배송", "하자"]},
+                {"prompt": "제품에서 (　)를 발견했다.", "options": ["하자", "반품"]},
+                {"prompt": "마음이 바뀌어 주문을 (　)했다.", "options": ["철회", "교환"]},
+                {"prompt": "계약을 중도 해지하면 (　)을 내야 한다.", "options": ["위약금", "면책"]},
+                {"prompt": "(　)의 권리를 보호하는 법이 있다.", "options": ["소비자", "청약"]},
+            ]},
+        ],
+        "quote": {"text": "정직이 최선의 방책이다.", "author": "서양 속담"},
+    },
+}
+
 CIRCLE_NUM = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫"]
 CHOICE_MARK = ["㉮", "㉯", "㉰", "㉱"]
 
@@ -400,16 +525,16 @@ def add_page_break(doc):
 # ---- Day1: 단어 카드 (2단 배치) ----
 
 def word_cell_content(cell, idx, w):
-    set_cell_margins(cell, top=50, bottom=60, left=100, right=100)
-    head = tight(cell.paragraphs[0], 2, 0)
+    set_cell_margins(cell, top=35, bottom=45, left=100, right=100)
+    head = tight(cell.paragraphs[0], 1, 0)
     mixed_run(head, [
         (f"{CIRCLE_NUM[idx]} {w['term']}  ", 12, True, None),
         (f"[{w['hanja']}]", 7.5, False, GRAY),
     ])
-    d = p(cell, after=1)
-    mixed_run(d, [("뜻  ", 8.5, True, ACCENT), (w["definition"], 9, False, None)])
-    ex = p(cell, after=2)
-    mixed_run(ex, [("예문  ", 8.5, True, ACCENT), (w["example"].format(BLANK), 9, False, None)])
+    d = p(cell, after=0)
+    mixed_run(d, [("뜻  ", 8, True, ACCENT), (w["definition"], 8.5, False, None)])
+    ex = p(cell, after=1)
+    mixed_run(ex, [("예문  ", 8, True, ACCENT), (w["example"].format(BLANK), 8.5, False, None)])
 
     inner = cell.add_table(rows=2, cols=1)
     inner.rows[0].cells[0].width = Cm(8.2)
@@ -426,7 +551,7 @@ def word_cell_content(cell, idx, w):
     tr = inner.rows[1]._tr
     trPr = tr.get_or_add_trPr()
     trh = OxmlElement("w:trHeight")
-    trh.set(qn("w:val"), "210")
+    trh.set(qn("w:val"), "170")
     trh.set(qn("w:hRule"), "atLeast")
     trPr.append(trh)
 
@@ -601,7 +726,7 @@ def quote_box(doc, quote):
     keep_table_together(table)
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, "F7F8FF")
-    set_cell_margins(cell, 50, 50, 140, 140)
+    set_cell_margins(cell, 35, 35, 120, 120)
     qp = cell.paragraphs[0]
     tight(qp, 0, 1)
     qp.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -617,7 +742,7 @@ def quote_box(doc, quote):
 
     guide = p(doc, "✍ 위 명언을 소리 내어 한 번 읽고, 나만의 글씨체로 또박또박 따라 써 보세요.",
               size=8, color=GRAY, before=2, after=1)
-    writing_lines(doc, count=2, row_height=220)
+    writing_lines(doc, count=2, row_height=160)
 
 
 def todo_box(doc, count=3):
@@ -678,10 +803,10 @@ def build_day(topic, day_key, day, out_path):
     if "words" in day:  # 학습 day
         word_grid(doc, day["words"])
         if day.get("checkpoints"):
-            p(doc, "확인 문제 — 알맞은 말을 빈칸에 쓰세요", size=9.5, bold=True, color=ACCENT, before=3, after=2)
+            p(doc, "확인 문제 — 알맞은 말을 빈칸에 쓰세요", size=9, bold=True, color=ACCENT, before=1, after=1)
             checkpoint_grid(doc, day["checkpoints"])
         if day.get("confusable"):
-            p(doc, "⭐ 헷갈리기 쉬운 어휘", size=9.5, bold=True, color=ACCENT, before=3, after=2)
+            p(doc, "⭐ 헷갈리기 쉬운 어휘", size=9, bold=True, color=ACCENT, before=1, after=1)
             confusable_box(doc, day["confusable"])
     else:  # 확인/복습 day
         render_sections(doc, day.get("sections", []))
@@ -719,3 +844,4 @@ def build_week(topic, out_prefix):
 if __name__ == "__main__":
     build_week(WEEK1, "1주차_1_공문서행정문서읽기")
     build_week(WEEK2, "2주차_2_금융경제생활")
+    build_week(WEEK3, "3주차_3_소비자계약약관읽기")
