@@ -3,17 +3,33 @@
    ============================================================ */
 
 const SCHOOL_LOGO_SVG = `
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="47" fill="#fbfaf4" stroke="#3f7d5c" stroke-width="3"/>
-  <circle cx="50" cy="50" r="41" fill="none" stroke="#3f7d5c" stroke-width="1" opacity="0.5"/>
-  <text x="50" y="35" text-anchor="middle" font-size="13" font-weight="700" fill="#2f4f3f" font-family="serif">慶北</text>
-  <g fill="#7fa06a">
-    <ellipse cx="50" cy="52" rx="7" ry="11"/>
-    <ellipse cx="50" cy="72" rx="7" ry="11"/>
-    <ellipse cx="40" cy="62" rx="11" ry="7"/>
-    <ellipse cx="60" cy="62" rx="11" ry="7"/>
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="94" fill="#ffffff" stroke="#94a894" stroke-width="7"/>
+
+  <g fill="#7f9c7f">
+    <path d="M100,95 C88,80 85,60 95,45 C105,55 108,75 100,95 Z" transform="rotate(45 100 100)"/>
+    <path d="M100,95 C88,80 85,60 95,45 C105,55 108,75 100,95 Z" transform="rotate(135 100 100)"/>
+    <path d="M100,95 C88,80 85,60 95,45 C105,55 108,75 100,95 Z" transform="rotate(225 100 100)"/>
+    <path d="M100,95 C88,80 85,60 95,45 C105,55 108,75 100,95 Z" transform="rotate(315 100 100)"/>
   </g>
-  <circle cx="50" cy="62" r="5" fill="#4f7a5a"/>
+
+  <g fill="#ffffff" stroke="#8fa38f" stroke-width="2.5">
+    <path d="M100,100 C80,75 78,40 92,22 C95,18 105,18 108,22 C122,40 120,75 100,100 Z"/>
+    <path d="M100,100 C80,75 78,40 92,22 C95,18 105,18 108,22 C122,40 120,75 100,100 Z" transform="rotate(90 100 100)"/>
+    <path d="M100,100 C80,75 78,40 92,22 C95,18 105,18 108,22 C122,40 120,75 100,100 Z" transform="rotate(180 100 100)"/>
+    <path d="M100,100 C80,75 78,40 92,22 C95,18 105,18 108,22 C122,40 120,75 100,100 Z" transform="rotate(270 100 100)"/>
+  </g>
+
+  <g fill="#8fa38f">
+    <circle cx="100" cy="19" r="2.6"/>
+    <circle cx="181" cy="100" r="2.6"/>
+    <circle cx="100" cy="181" r="2.6"/>
+    <circle cx="19" cy="100" r="2.6"/>
+  </g>
+
+  <circle cx="100" cy="100" r="29" fill="#f6e08a" stroke="#1f3a68" stroke-width="3"/>
+  <text x="100" y="94" text-anchor="middle" font-size="15" font-weight="700" fill="#1f3a68" font-family="serif">慶</text>
+  <text x="100" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1f3a68" font-family="serif">北</text>
 </svg>`;
 
 function renderSplash(onDone){
