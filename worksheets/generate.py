@@ -209,7 +209,7 @@ def set_run_font(run, size=9.5, bold=False, color=None, name=FONT_NAME):
     rFonts.set(qn("w:eastAsia"), name)
 
 
-def tight(paragraph, before=0, after=2, line=1.05):
+def tight(paragraph, before=0, after=2, line=1.0):
     pf = paragraph.paragraph_format
     pf.space_before = Pt(before)
     pf.space_after = Pt(after)
@@ -240,21 +240,21 @@ def section_bar(doc, text, subtitle=None):
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, "3D4BC7")
-    set_cell_margins(cell, top=70, bottom=70, left=140, right=140)
+    set_cell_margins(cell, top=45, bottom=45, left=120, right=120)
     para = cell.paragraphs[0]
     tight(para, 0, 0)
     run = para.add_run(text)
-    set_run_font(run, size=11.5, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
+    set_run_font(run, size=10, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
     if subtitle:
-        p2 = p(cell, subtitle, size=8.5, color=RGBColor(0xDD, 0xE0, 0xFF), after=0)
-    doc.add_paragraph().paragraph_format.space_after = Pt(1)
+        p2 = p(cell, subtitle, size=7.8, color=RGBColor(0xDD, 0xE0, 0xFF), after=0)
+    doc.add_paragraph().paragraph_format.space_after = Pt(0)
 
 
 def info_header(doc, week, topic, day_label, intro):
-    p(doc, "명품 경북여상 문해력 15분  ·  손으로 쓰는 학습지", size=15.5, bold=True, color=ACCENT, after=2)
+    p(doc, "명품 경북여상 문해력 15분  ·  손으로 쓰는 학습지", size=14, bold=True, color=ACCENT, after=1)
 
     sub = doc.add_paragraph()
-    tight(sub, 0, 6)
+    tight(sub, 0, 3)
     sub.paragraph_format.tab_stops.add_tab_stop(Cm(17.8), WD_TAB_ALIGNMENT.RIGHT)
     r1 = sub.add_run(f"{week}주차 · {topic}  —  {day_label}")
     set_run_font(r1, size=10.5, bold=True)
@@ -264,7 +264,7 @@ def info_header(doc, week, topic, day_label, intro):
     r3 = sub.add_run(f"{BLANK[:3]} 월  {BLANK[:3]} 일")
     set_run_font(r3, size=11.5)
 
-    p(doc, intro, size=9, color=GRAY, before=4, after=8)
+    p(doc, intro, size=8.5, color=GRAY, before=2, after=4)
 
 
 def add_page_break(doc):
@@ -276,33 +276,33 @@ def add_page_break(doc):
 # ---- Day1: 단어 카드 (2단 배치) ----
 
 def word_cell_content(cell, idx, w):
-    set_cell_margins(cell, top=70, bottom=90, left=110, right=110)
-    head = tight(cell.paragraphs[0], 4, 1)
+    set_cell_margins(cell, top=50, bottom=60, left=100, right=100)
+    head = tight(cell.paragraphs[0], 2, 0)
     mixed_run(head, [
-        (f"{CIRCLE_NUM[idx]} {w['term']}  ", 12.5, True, None),
-        (f"[{w['hanja']}]", 8, False, GRAY),
+        (f"{CIRCLE_NUM[idx]} {w['term']}  ", 12, True, None),
+        (f"[{w['hanja']}]", 7.5, False, GRAY),
     ])
     d = p(cell, after=1)
-    mixed_run(d, [("뜻  ", 9, True, ACCENT), (w["definition"], 9.5, False, None)])
-    ex = p(cell, after=3)
-    mixed_run(ex, [("예문  ", 9, True, ACCENT), (w["example"].format(BLANK), 9.5, False, None)])
+    mixed_run(d, [("뜻  ", 8.5, True, ACCENT), (w["definition"], 9, False, None)])
+    ex = p(cell, after=2)
+    mixed_run(ex, [("예문  ", 8.5, True, ACCENT), (w["example"].format(BLANK), 9, False, None)])
 
     inner = cell.add_table(rows=2, cols=1)
     inner.rows[0].cells[0].width = Cm(8.2)
     inner.rows[1].cells[0].width = Cm(8.2)
     label_cell = inner.rows[0].cells[0]
     set_cell_shading(label_cell, LIGHTGRAY)
-    set_cell_margins(label_cell, 20, 20, 60, 60)
+    set_cell_margins(label_cell, 15, 15, 60, 60)
     lp = tight(label_cell.paragraphs[0], 0, 0)
     lr = lp.add_run("✍ 나의 글씨체로 예문 완성하기")
-    set_run_font(lr, size=7.8, bold=True, color=GRAY)
+    set_run_font(lr, size=7.3, bold=True, color=GRAY)
 
     write_cell = inner.rows[1].cells[0]
-    set_cell_margins(write_cell, 20, 20, 60, 60)
+    set_cell_margins(write_cell, 15, 15, 60, 60)
     tr = inner.rows[1]._tr
     trPr = tr.get_or_add_trPr()
     trh = OxmlElement("w:trHeight")
-    trh.set(qn("w:val"), "280")
+    trh.set(qn("w:val"), "210")
     trh.set(qn("w:hRule"), "atLeast")
     trPr.append(trh)
 
@@ -329,11 +329,11 @@ def checkpoint_grid(doc, checkpoints):
         r, c = divmod(i, 2)
         cell = table.rows[r].cells[c]
         cell.width = Cm(8.6)
-        set_cell_margins(cell, 60, 70, 110, 110)
+        set_cell_margins(cell, 40, 45, 90, 90)
         sent = cpb["template"].format(f"{BLANK}", f"{BLANK}")
-        head = tight(cell.paragraphs[0], 2, 1)
-        mixed_run(head, [(f"Q{i+1}. ", 9.5, True, ACCENT), (sent, 9.5, False, None)])
-        hint = p(cell, f"보기: {cpb['options'][0]} · {cpb['options'][1]}", size=8, color=GRAY, after=2)
+        head = tight(cell.paragraphs[0], 1, 1)
+        mixed_run(head, [(f"Q{i+1}. ", 9, True, ACCENT), (sent, 9, False, None)])
+        hint = p(cell, f"보기: {cpb['options'][0]} · {cpb['options'][1]}", size=7.5, color=GRAY, after=1)
     merge_last_row_if_odd(table, len(checkpoints))
 
 
@@ -343,13 +343,13 @@ def confusable_box(doc, c):
     keep_table_together(table)
     for cell, side in zip(table.rows[0].cells, (c["left"], c["right"])):
         cell.width = Cm(8.6)
-        set_cell_margins(cell, 60, 60, 110, 110)
+        set_cell_margins(cell, 40, 40, 90, 90)
         set_cell_shading(cell, "F7F8FF")
         head = tight(cell.paragraphs[0], 0, 1)
-        mixed_run(head, [(f"{side['term']} ", 11, True, ACCENT), (f"[{side['hanja']}]  ", 8, False, GRAY),
-                          (side["definition"], 9, False, None)])
-        ex = p(cell, "예) " + side["example"], size=8.5, color=GRAY, after=0)
-    tip = p(doc, "🧠 " + c["tip"], size=9, color=ACCENT, before=3, after=2)
+        mixed_run(head, [(f"{side['term']} ", 10.5, True, ACCENT), (f"[{side['hanja']}]  ", 7.5, False, GRAY),
+                          (side["definition"], 8.5, False, None)])
+        ex = p(cell, "예) " + side["example"], size=8, color=GRAY, after=0)
+    tip = p(doc, "🧠 " + c["tip"], size=8.5, color=ACCENT, before=2, after=1)
 
 
 # ---- Day2: 문제 ----
@@ -363,13 +363,13 @@ def fill_grid(doc, items):
         r, c = divmod(i, 2)
         cell = table.rows[r].cells[c]
         cell.width = Cm(8.6)
-        set_cell_margins(cell, 50, 60, 100, 100)
-        head = tight(cell.paragraphs[0], 2, 1)
-        mixed_run(head, [(f"{i+1}. ", 9.5, True, None), (item["prompt"], 9.5, False, None)])
+        set_cell_margins(cell, 35, 40, 90, 90)
+        head = tight(cell.paragraphs[0], 1, 1)
+        mixed_run(head, [(f"{i+1}. ", 9, True, None), (item["prompt"], 9, False, None)])
         if item.get("hint"):
-            p(cell, item["hint"].replace("___", BLANK[:4]), size=8.5, color=GRAY, after=1)
-        ans = p(cell, after=2)
-        mixed_run(ans, [("답  ", 8.5, True, ACCENT), (BLANK, 9.5, False, None)])
+            p(cell, item["hint"].replace("___", BLANK[:4]), size=8, color=GRAY, after=1)
+        ans = p(cell, after=1)
+        mixed_run(ans, [("답  ", 8, True, ACCENT), (BLANK, 9, False, None)])
     merge_last_row_if_odd(table, len(items))
 
 
@@ -383,45 +383,45 @@ def choice_grid(doc, items, four=False):
         r, c = divmod(i, 2)
         cell = table.rows[r].cells[c]
         cell.width = Cm(8.6)
-        set_cell_margins(cell, 50, 60, 100, 100)
-        head = tight(cell.paragraphs[0], 2, 1)
-        mixed_run(head, [(f"{i+1}. ", 9.5, True, None), (item["prompt"], 9.5, False, None)])
+        set_cell_margins(cell, 35, 40, 90, 90)
+        head = tight(cell.paragraphs[0], 1, 1)
+        mixed_run(head, [(f"{i+1}. ", 9, True, None), (item["prompt"], 9, False, None)])
         opts = " ".join(f"{marks[j]}{o}" for j, o in enumerate(item["options"]))
-        p(cell, opts, size=8.5, color=GRAY, after=1)
-        ans = p(cell, after=2)
-        mixed_run(ans, [("답  ", 8.5, True, ACCENT), (BLANK[:5], 9.5, False, None)])
+        p(cell, opts, size=8, color=GRAY, after=1)
+        ans = p(cell, after=1)
+        mixed_run(ans, [("답  ", 8, True, ACCENT), (BLANK[:5], 9, False, None)])
     merge_last_row_if_odd(table, len(items))
 
 
 def passage_box(doc, passage):
-    p(doc, passage["title"], size=11, bold=True, color=ACCENT, before=8, after=3)
+    p(doc, passage["title"], size=10.5, bold=True, color=ACCENT, before=4, after=2)
     table = doc.add_table(rows=1, cols=1)
     table.style = "Table Grid"
     keep_table_together(table)
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, LIGHTGRAY)
-    set_cell_margins(cell, 70, 70, 120, 120)
+    set_cell_margins(cell, 50, 50, 100, 100)
     first = True
     for line in passage["body"]:
         para = cell.paragraphs[0] if first else cell.add_paragraph()
         first = False
-        tight(para, 0, 2)
+        tight(para, 0, 1)
         run = para.add_run(line)
-        set_run_font(run, size=8.8, bold=line.startswith("["))
-    doc.add_paragraph().paragraph_format.space_after = Pt(3)
+        set_run_font(run, size=8.3, bold=line.startswith("["))
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
     for i, item in enumerate(passage["items"]):
-        para = p(doc, after=1)
-        mixed_run(para, [(f"{i+1}. ", 9.5, True, None), (item["prompt"] + "  ", 9.5, False, None)])
+        para = p(doc, after=0)
+        mixed_run(para, [(f"{i+1}. ", 9, True, None), (item["prompt"] + "  ", 9, False, None)])
         opts_run = para.add_run(" ".join(f"{CHOICE_MARK[j]}{o}" for j, o in enumerate(item["options"])))
-        set_run_font(opts_run, size=8.3, color=GRAY)
-        ans = p(doc, after=4)
-        mixed_run(ans, [("     답  ", 8.5, True, ACCENT), (BLANK[:5], 9.5, False, None)])
+        set_run_font(opts_run, size=7.8, color=GRAY)
+        ans = p(doc, after=2)
+        mixed_run(ans, [("     답  ", 8, True, ACCENT), (BLANK[:5], 9, False, None)])
 
 
 def reflection_block(doc):
     section_bar(doc, "오늘의 한 줄", "가장 기억에 남는 낱말과 이유를 써 보세요.")
-    ruled_line(doc, before=4, after=8)
+    ruled_line(doc, before=2, after=4)
 
 
 def set_cell_border_bottom_only(cell, size=6, color="9AA0C3"):
@@ -471,33 +471,33 @@ def ruled_line(doc, before=4, after=10):
 
 
 def quote_box(doc, quote):
-    p(doc, "💬 오늘의 명언", size=10.5, bold=True, color=ACCENT, before=10, after=4)
+    p(doc, "💬 오늘의 명언", size=9.5, bold=True, color=ACCENT, before=4, after=2)
     table = doc.add_table(rows=1, cols=1)
     table.style = "Table Grid"
     keep_table_together(table)
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, "F7F8FF")
-    set_cell_margins(cell, 80, 80, 180, 180)
+    set_cell_margins(cell, 50, 50, 140, 140)
     qp = cell.paragraphs[0]
-    tight(qp, 0, 3)
+    tight(qp, 0, 1)
     qp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = qp.add_run(f"“{quote['text']}”")
     run.font.italic = True
-    set_run_font(run, size=11.5, bold=True, color=RGBColor(0x33, 0x33, 0x66))
+    set_run_font(run, size=10, bold=True, color=RGBColor(0x33, 0x33, 0x66))
     run.font.italic = True
     ap = cell.add_paragraph()
     tight(ap, 0, 0)
     ap.alignment = WD_ALIGN_PARAGRAPH.CENTER
     arun = ap.add_run(f"— {quote['author']}")
-    set_run_font(arun, size=9, color=GRAY)
+    set_run_font(arun, size=8, color=GRAY)
 
     guide = p(doc, "✍ 위 명언을 소리 내어 한 번 읽고, 나만의 글씨체로 또박또박 따라 써 보세요.",
-              size=8.8, color=GRAY, before=4, after=2)
-    writing_lines(doc, count=2)
+              size=8, color=GRAY, before=2, after=1)
+    writing_lines(doc, count=2, row_height=220)
 
 
 def todo_box(doc, count=3):
-    p(doc, "✅ 오늘 해야 할 일", size=10, bold=True, color=ACCENT, before=2, after=4)
+    p(doc, "✅ 오늘 해야 할 일", size=9.5, bold=True, color=ACCENT, before=0, after=2)
     table = doc.add_table(rows=1, cols=count)
     table.style = "Table Grid"
     keep_table_together(table)
@@ -505,12 +505,12 @@ def todo_box(doc, count=3):
     for i in range(count):
         cell = table.rows[0].cells[i]
         cell.width = Cm(col_w)
-        set_cell_margins(cell, 55, 55, 90, 90)
+        set_cell_margins(cell, 35, 35, 80, 80)
         para = cell.paragraphs[0]
         tight(para, 0, 0)
         run = para.add_run("☐ ")
-        set_run_font(run, size=11, color=GRAY)
-    doc.add_paragraph().paragraph_format.space_after = Pt(6)
+        set_run_font(run, size=10, color=GRAY)
+    doc.add_paragraph().paragraph_format.space_after = Pt(3)
 
 
 def base_document():
@@ -518,8 +518,8 @@ def base_document():
     section = doc.sections[0]
     section.page_height = Cm(29.7)
     section.page_width = Cm(21.0)
-    section.top_margin = Cm(1.0)
-    section.bottom_margin = Cm(0.9)
+    section.top_margin = Cm(0.8)
+    section.bottom_margin = Cm(0.7)
     section.left_margin = Cm(1.6)
     section.right_margin = Cm(1.6)
 
@@ -537,7 +537,7 @@ def base_document():
 
 def render_sections(doc, sections):
     for sec in sections:
-        p(doc, sec["title"], size=10.5, bold=True, color=ACCENT, before=6, after=3)
+        p(doc, sec["title"], size=9.5, bold=True, color=ACCENT, before=3, after=1)
         if sec["type"] == "fill":
             fill_grid(doc, sec["items"])
         elif sec["type"] == "choice":
@@ -554,10 +554,10 @@ def build_day(topic, day_key, day, out_path):
     if "words" in day:  # 학습 day
         word_grid(doc, day["words"])
         if day.get("checkpoints"):
-            p(doc, "확인 문제 — 알맞은 말을 빈칸에 쓰세요", size=10.5, bold=True, color=ACCENT, before=8, after=4)
+            p(doc, "확인 문제 — 알맞은 말을 빈칸에 쓰세요", size=9.5, bold=True, color=ACCENT, before=3, after=2)
             checkpoint_grid(doc, day["checkpoints"])
         if day.get("confusable"):
-            p(doc, "⭐ 헷갈리기 쉬운 어휘", size=10.5, bold=True, color=ACCENT, before=8, after=4)
+            p(doc, "⭐ 헷갈리기 쉬운 어휘", size=9.5, bold=True, color=ACCENT, before=3, after=2)
             confusable_box(doc, day["confusable"])
     else:  # 확인/복습 day
         render_sections(doc, day.get("sections", []))
