@@ -49,6 +49,20 @@ async function fetchScoreHistory(studentId){
   }
 }
 
+/** 가장 최근 금요일 "행운의 7명" 추첨 결과를 가져온다. 연동 안 됐거나 실패하면 null. */
+async function fetchLatestWinners(){
+  const url = endpointUrl();
+  if(!url) return null;
+  try{
+    const res = await fetch(`${url}?winners=1`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return (data && data.status === "ok") ? data.winners : null;
+  }catch(e){
+    return null;
+  }
+}
+
 function logActivity(day, score){
   const student = getStudent();
   if(!student || !day) return;
