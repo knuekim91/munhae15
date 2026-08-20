@@ -19,7 +19,7 @@ function renderLogin(){
     <div class="login-wrap">
       <div class="login-card">
         <div class="login-emoji">📖</div>
-        <h1 class="login-title">문해력 15분</h1>
+        <h1 class="login-title">명품 경북여상 문해력 15분</h1>
         <p class="login-sub">학년 · 반 · 번호를 입력하고 오늘의 학습을 시작하세요.</p>
         <div class="login-grid">
           <label class="login-field">
@@ -81,8 +81,16 @@ function renderProfileChip(){
     document.querySelector(".topbar-actions").prepend(chip);
   }
   const label = `${student.grade}학년${student.cls}반${student.number}번`;
-  chip.innerHTML = `<span class="profile-avatar">${(student.name||label).slice(0,1)}</span><span class="profile-label">${student.name ? student.name : label}</span>`;
-  chip.onclick = () => toggleProfileMenu(chip, student, label);
+  chip.innerHTML = `
+    <button class="score-icon-btn" id="scoreIconBtn" title="내 점수 기록">📊</button>
+    <span class="profile-avatar">${(student.name||label).slice(0,1)}</span>
+    <span class="profile-label">${student.name ? student.name : label}</span>`;
+  chip.querySelector(".profile-avatar").onclick = (e) => { e.stopPropagation(); toggleProfileMenu(chip, student, label); };
+  chip.querySelector(".profile-label").onclick = (e) => { e.stopPropagation(); toggleProfileMenu(chip, student, label); };
+  document.getElementById("scoreIconBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    openScoreModal();
+  });
 }
 
 function toggleProfileMenu(chip, student, label){

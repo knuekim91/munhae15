@@ -20,8 +20,38 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  var studentId = e.parameter && e.parameter.studentId;
+  if (studentId) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", records: getHistory_(studentId) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   return ContentService.createTextOutput(JSON.stringify({ status: "ok", message: "문해력 15분 기록 API" }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** 특정 학생(학번코드)의 점수가 있는 기록만 시간순으로 반환 */
+function getHistory_(studentId) {
+  var sheet = getSheet_();
+  var values = sheet.getDataRange().getValues();
+  var records = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var rowStudentId = String(row[1]);
+    var score = row[11];
+    if (rowStudentId !== String(studentId)) continue;
+    if (score === "" || score === null || isNaN(Number(score))) continue;
+    records.push({
+      timestamp: row[0],
+      week: row[6],
+      dayId: row[7],
+      unit: row[8],
+      topic: row[9],
+      type: row[10],
+      score: Number(score)
+    });
+  }
+  records.sort(function (a, b) { return new Date(a.timestamp) - new Date(b.timestamp); });
+  return records;
 }
 
 function getSheet_() {

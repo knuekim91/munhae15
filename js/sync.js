@@ -35,6 +35,20 @@ function flushPending(){
   });
 }
 
+/** 구글 시트에서 특정 학생의 점수 기록을 가져온다. 연동 안 됐거나 실패하면 null. */
+async function fetchScoreHistory(studentId){
+  const url = endpointUrl();
+  if(!url) return null;
+  try{
+    const res = await fetch(`${url}?studentId=${encodeURIComponent(studentId)}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return (data && data.status === "ok") ? data.records : null;
+  }catch(e){
+    return null;
+  }
+}
+
 function logActivity(day, score){
   const student = getStudent();
   if(!student || !day) return;

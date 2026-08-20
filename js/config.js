@@ -6,5 +6,5 @@
    ============================================================ */
 const APP_CONFIG = {
   SHEET_WEBAPP_URL: "",   // 예: "https://script.google.com/macros/s/AKfycb.../exec"
-  SCHOOL_NAME: "문해력 15분",
+  SCHOOL_NAME: "명품 경북여상 문해력 15분",
 };
