@@ -3,10 +3,9 @@
    ============================================================ */
 
 const TYPE_META = {
-  learn:      { icon: "📘", tag: "익히기" },
-  practice:   { icon: "✍️", tag: "확인" },
-  review:     { icon: "🔄", tag: "복습" },
-  assessment: { icon: "🧪", tag: "평가" },
+  learn:    { icon: "📘" },
+  practice: { icon: "✍️" },
+  review:   { icon: "🔄" },
 };
 
 /* ---------------- progress store (학생별로 분리 저장) ---------------- */
@@ -94,7 +93,7 @@ function renderSidebar(){
     head.className = "week-head";
     head.innerHTML = `
       <span class="week-badge">${wk.week}주</span>
-      <span class="week-title">${wk.topics[0].title} · ${wk.topics[1].title}</span>
+      <span class="week-title">${wk.topic.title}${wk.exam ? ` <span class="exam-badge">📝 ${wk.exam.label}</span>` : ""}</span>
       <span class="week-meta">${doneCount}/${wk.days.length}</span>
       <span class="week-chevron">›</span>`;
     head.addEventListener("click", () => group.classList.toggle("open"));
@@ -111,7 +110,7 @@ function renderSidebar(){
         <span class="day-dot"></span>
         <span class="day-type-icon">${meta.icon}</span>
         <span class="day-label">${d.label}</span>
-        <span class="day-tag">${meta.tag}</span>`;
+        <span class="day-tag">${d.tag}</span>`;
       item.addEventListener("click", () => { location.hash = d.id; });
       list.appendChild(item);
     });
@@ -167,9 +166,7 @@ function router(){
   } else if(day.type === "practice"){
     renderPracticeDay(content, day, data);
   } else if(day.type === "review"){
-    renderQuizDay(content, day, data, "복습 완료!");
-  } else if(day.type === "assessment"){
-    renderQuizDay(content, day, data, "형성평가 제출 완료!");
+    renderQuizDay(content, day, data, "이번 주 복습 완료!");
   }
 
   renderSidebar();
@@ -199,7 +196,7 @@ function renderPlaceholder(content, day){
 function renderLearnDay(content, day, data){
   const h1 = document.createElement("h1");
   h1.className = "page-title";
-  h1.textContent = day.topic + " — 어휘 익히기";
+  h1.textContent = day.topic + " — " + day.tag;
   content.appendChild(h1);
 
   const sub = document.createElement("p");
@@ -319,7 +316,7 @@ function renderCheckpoint(cp, num){
 function renderPracticeDay(content, day, data){
   const h1 = document.createElement("h1");
   h1.className = "page-title";
-  h1.textContent = day.topic + " — 확인·적용";
+  h1.textContent = day.topic + " — " + day.tag;
   content.appendChild(h1);
   const sub = document.createElement("p");
   sub.className = "page-sub";
@@ -375,6 +372,10 @@ function buildQuizFlow(content, day, data, completeMsg){
     content.appendChild(card);
   });
 
+  if(data.quote){
+    content.appendChild(renderQuote(data.quote));
+  }
+
   const resultCard = document.createElement("div");
   resultCard.className = "card result-card";
   resultCard.style.display = "none";
@@ -401,6 +402,16 @@ function buildQuizFlow(content, day, data, completeMsg){
   });
   row.appendChild(checkBtn);
   content.appendChild(row);
+}
+
+function renderQuote(quote){
+  const card = document.createElement("div");
+  card.className = "card quote-card";
+  card.innerHTML = `
+    <div class="quote-label">💬 오늘의 명언</div>
+    <div class="quote-text">“${quote.text}”</div>
+    <div class="quote-author">— ${quote.author}</div>`;
+  return card;
 }
 
 function renderQuizItem(item, num, state){

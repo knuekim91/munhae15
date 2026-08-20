@@ -1,108 +1,82 @@
 /* ============================================================
-   1주차 콘텐츠 — 주제 ①: 공문서·행정 문서 읽기
+   1주차 콘텐츠 — 주제 ①: 공문서·행정 문서 읽기 (5일 구성)
+   Day1 학습① / Day2 학습② / Day3 확인① / Day4 확인②+읽기 / Day5 종합복습
    ============================================================ */
 var DAY_CONTENT = window.DAY_CONTENT || {};
 
 Object.assign(DAY_CONTENT, {
 
-/* ---------- Day 1: 어휘 익히기 ---------- */
-"w01d01": {
-  intro: "학교 안내문, 주민센터 서류, 신청서에는 어려운 행정 용어가 자주 나와요. 뜻을 정확히 알아야 서류를 제때, 정확하게 처리할 수 있습니다.",
+/* ---------- Day 1: 어휘 학습① (단어 1~6 + 확인문제 1~3) ---------- */
+"w01d1": {
+  intro: "학교 안내문, 주민센터 서류, 신청서에는 어려운 행정 용어가 자주 나와요. 오늘은 6개 어휘부터 익혀 봅시다.",
   words: [
-    {
-      term: "신청", hanja: "申請", hanjaMeaning: "펼 신 · 청할 청",
+    { term: "신청", hanja: "申請", hanjaMeaning: "펼 신 · 청할 청",
       definition: "단체나 기관에 어떤 일이나 물건을 알려 청구함.",
-      example: "그는 도서관 열람실 이용을 신청했다."
-    },
-    {
-      term: "발급", hanja: "發給", hanjaMeaning: "필 발 · 줄 급",
+      example: "그는 도서관 열람실 이용을 신청했다." },
+    { term: "발급", hanja: "發給", hanjaMeaning: "필 발 · 줄 급",
       definition: "증명서 따위를 발행하여 내줌.",
-      example: "주민센터에서는 각종 증명서를 즉시 발급해 준다."
-    },
-    {
-      term: "제출", hanja: "提出", hanjaMeaning: "끌 제 · 날 출",
+      example: "주민센터에서는 각종 증명서를 즉시 발급해 준다." },
+    { term: "제출", hanja: "提出", hanjaMeaning: "끌 제 · 날 출",
       definition: "문안이나 의견, 서류 따위를 내놓음.",
-      example: "결석계는 담임 선생님께 직접 제출해야 한다."
-    },
-    {
-      term: "첨부", hanja: "添附", hanjaMeaning: "더할 첨 · 붙을 부",
+      example: "결석계는 담임 선생님께 직접 제출해야 한다." },
+    { term: "첨부", hanja: "添附", hanjaMeaning: "더할 첨 · 붙을 부",
       definition: "문서나 물건 따위를 더 보탬.",
-      example: "신청서에는 신분증 사본을 첨부해야 한다."
-    },
-    {
-      term: "기한", hanja: "期限", hanjaMeaning: "기약할 기 · 한할 한",
+      example: "신청서에는 신분증 사본을 첨부해야 한다." },
+    { term: "기한", hanja: "期限", hanjaMeaning: "기약할 기 · 한할 한",
       definition: "미리 한정하여 놓은 시기.",
-      example: "서류 제출 기한을 넘기면 접수가 취소된다."
-    },
-    {
-      term: "유효", hanja: "有效", hanjaMeaning: "있을 유 · 효험 효",
+      example: "서류 제출 기한을 넘기면 접수가 취소된다." },
+    { term: "유효", hanja: "有效", hanjaMeaning: "있을 유 · 효험 효",
       definition: "보람이나 효과가 있음.",
       example: "이 할인 쿠폰은 이달 말까지만 유효하다.",
-      note: "반대말은 '무효(無效)' — 효력이 없음."
-    },
-    {
-      term: "열람", hanja: "閱覽", hanjaMeaning: "볼 열 · 볼 람",
-      definition: "책이나 문서 따위를 죽 훑어보거나 조사하며 봄.",
-      example: "이 서류는 담당자의 허락을 받아야 열람할 수 있다."
-    },
-    {
-      term: "통보", hanja: "通報", hanjaMeaning: "통할 통 · 알릴 보",
-      definition: "통지하여 보고함.",
-      example: "합격자에게는 문자로 결과를 통보한다."
-    },
-    {
-      term: "반려", hanja: "返戾", hanjaMeaning: "돌이킬 반 · 어그러질 려",
-      definition: "주로 하급 기관에서 제출한 문서를 처리하지 않고 되돌려 보냄.",
-      example: "서명이 빠진 신청서는 결국 반려되었다."
-    },
-    {
-      term: "사본", hanja: "寫本", hanjaMeaning: "베낄 사 · 근본 본",
-      definition: "원본을 그대로 옮기거나 복사한 문서.",
-      example: "신분증 사본 한 부를 함께 제출해 주세요.",
-      note: "반대말은 '원본(原本)' — 맨 처음의 문서."
-    },
-    {
-      term: "갱신", hanja: "更新", hanjaMeaning: "다시 갱 · 새 신",
-      definition: "이미 있던 것을 고쳐 새롭게 함.",
-      example: "운전면허증은 일정 기간마다 갱신해야 한다."
-    },
-    {
-      term: "공고", hanja: "公告", hanjaMeaning: "공평할 공 · 알릴 고",
-      definition: "국가 기관이나 단체가 어떤 사항을 세상에 널리 알림.",
-      example: "이번 채용 공고에는 지원 자격이 자세히 나와 있다."
-    }
+      note: "반대말은 '무효(無效)' — 효력이 없음." }
   ],
   checkpoints: [
-    {
-      options: ["신청", "발급"],
+    { options: ["신청", "발급"],
       text: "주민센터에 여권용 사진을 들고 가서 여권 __BLANK__을 했다. 접수 후 약 2주가 지나자 여권이 __BLANK__되었다는 문자를 받았다.",
-      answers: [0, 1]
-    },
-    {
-      options: ["제출", "첨부"],
+      answers: [0, 1] },
+    { options: ["제출", "첨부"],
       text: "봉사활동 확인서를 __BLANK__할 때에는 활동 사진을 함께 __BLANK__해야 인정받을 수 있다.",
-      answers: [0, 1]
-    },
-    {
-      options: ["기한", "유효"],
+      answers: [0, 1] },
+    { options: ["기한", "유효"],
       text: "이 신분증은 오는 12월까지만 __BLANK__하며, 그 __BLANK__이 지나면 다시 발급받아야 한다.",
-      answers: [1, 0]
-    },
-    {
-      options: ["열람", "통보"],
+      answers: [1, 0] }
+  ]
+},
+
+/* ---------- Day 2: 어휘 학습② (단어 7~12 + 확인문제 4~6 + 헷갈리는 어휘) ---------- */
+"w01d2": {
+  intro: "어제 배운 6개에 이어, 나머지 6개 어휘를 익혀 봅시다.",
+  words: [
+    { term: "열람", hanja: "閱覽", hanjaMeaning: "볼 열 · 볼 람",
+      definition: "책이나 문서 따위를 죽 훑어보거나 조사하며 봄.",
+      example: "이 서류는 담당자의 허락을 받아야 열람할 수 있다." },
+    { term: "통보", hanja: "通報", hanjaMeaning: "통할 통 · 알릴 보",
+      definition: "통지하여 보고함.",
+      example: "합격자에게는 문자로 결과를 통보한다." },
+    { term: "반려", hanja: "返戾", hanjaMeaning: "돌이킬 반 · 어그러질 려",
+      definition: "주로 하급 기관에서 제출한 문서를 처리하지 않고 되돌려 보냄.",
+      example: "서명이 빠진 신청서는 결국 반려되었다." },
+    { term: "사본", hanja: "寫本", hanjaMeaning: "베낄 사 · 근본 본",
+      definition: "원본을 그대로 옮기거나 복사한 문서.",
+      example: "신분증 사본 한 부를 함께 제출해 주세요.",
+      note: "반대말은 '원본(原本)' — 맨 처음의 문서." },
+    { term: "갱신", hanja: "更新", hanjaMeaning: "다시 갱 · 새 신",
+      definition: "이미 있던 것을 고쳐 새롭게 함.",
+      example: "운전면허증은 일정 기간마다 갱신해야 한다." },
+    { term: "공고", hanja: "公告", hanjaMeaning: "공평할 공 · 알릴 고",
+      definition: "국가 기관이나 단체가 어떤 사항을 세상에 널리 알림.",
+      example: "이번 채용 공고에는 지원 자격이 자세히 나와 있다." }
+  ],
+  checkpoints: [
+    { options: ["열람", "통보"],
       text: "개인정보가 담긴 서류는 담당자만 __BLANK__할 수 있고, 처리 결과는 신청인에게 문자로 __BLANK__된다.",
-      answers: [0, 1]
-    },
-    {
-      options: ["반려", "사본"],
+      answers: [0, 1] },
+    { options: ["반려", "사본"],
       text: "서명이 빠진 서류는 __BLANK__되어 다시 돌아왔다. 재접수할 때는 신분증 __BLANK__을 함께 냈다.",
-      answers: [0, 1]
-    },
-    {
-      options: ["갱신", "공고"],
+      answers: [0, 1] },
+    { options: ["갱신", "공고"],
       text: "운전면허증은 정기적으로 __BLANK__해야 하며, 이번 채용 __BLANK__에는 지원 자격이 자세히 나와 있다.",
-      answers: [0, 1]
-    }
+      answers: [0, 1] }
   ],
   confusable: {
     left:  { term: "결제", hanja: "決濟", definition: "돈을 주고받아 매매 거래를 끝맺음.", example: "카드로 결제했다." },
@@ -111,50 +85,44 @@ Object.assign(DAY_CONTENT, {
   }
 },
 
-/* ---------- Day 2: 어휘 확인하기 + 짧은 글 읽기 적용 ---------- */
-"w01d02": {
-  intro: "어제 배운 12개 어휘를 다양한 문제로 점검하고, 실제 안내문 속에서 어떻게 쓰이는지 확인해 봅시다.",
+/* ---------- Day 3: 확인 문제① (초성·글자카드·문장선택) ---------- */
+"w01d3": {
+  intro: "이틀 동안 배운 12개 어휘를 세 가지 방식으로 확인해 봅시다.",
   sections: [
-    {
-      title: "초성 힌트, 빈칸을 채우세요",
-      items: [
-        { type:"fill", prompt:"[ㅅ ㅊ] 단체나 기관에 어떤 일이나 물건을 알려 청구함.", hint:"동아리 가입 ___을 오늘까지 받는다.", answer:"신청", accept:["신청"] },
-        { type:"fill", prompt:"[ㅂ ㄱ] 증명서 따위를 발행하여 내줌.", hint:"주민등록등본은 무인 발급기에서도 ___받을 수 있다.", answer:"발급", accept:["발급"] },
-        { type:"fill", prompt:"[ㅊ ㅂ] 문서나 물건 따위를 더 보탬.", hint:"신청서에 사진을 ___해서 냈다.", answer:"첨부", accept:["첨부"] },
-        { type:"fill", prompt:"[ㅂ ㄹ] 제출한 문서를 처리하지 않고 되돌려 보냄.", hint:"서명이 빠진 서류는 ___되었다.", answer:"반려", accept:["반려"] }
-      ]
-    },
-    {
-      title: "글자 카드를 조합해 알맞은 어휘를 쓰세요",
+    { title: "초성 힌트, 빈칸을 채우세요", type: "fill", items: [
+      { type:"fill", prompt:"[ㅅ ㅊ] 단체나 기관에 어떤 일이나 물건을 알려 청구함.", hint:"동아리 가입 ___을 오늘까지 받는다.", answer:"신청", accept:["신청"] },
+      { type:"fill", prompt:"[ㅂ ㄱ] 증명서 따위를 발행하여 내줌.", hint:"주민등록등본은 무인 발급기에서도 ___받을 수 있다.", answer:"발급", accept:["발급"] },
+      { type:"fill", prompt:"[ㅊ ㅂ] 문서나 물건 따위를 더 보탬.", hint:"신청서에 사진을 ___해서 냈다.", answer:"첨부", accept:["첨부"] },
+      { type:"fill", prompt:"[ㅂ ㄹ] 제출한 문서를 처리하지 않고 되돌려 보냄.", hint:"서명이 빠진 서류는 ___되었다.", answer:"반려", accept:["반려"] }
+    ]},
+    { title: "글자 카드를 조합해 알맞은 어휘를 쓰세요", type: "fill",
       desc: "보기 글자: 기 · 한 · 유 · 효 · 통 · 보 · 갱 · 신",
       items: [
         { type:"fill", prompt:"미리 한정하여 놓은 시기.", answer:"기한", accept:["기한"] },
         { type:"fill", prompt:"보람이나 효과가 있음.", answer:"유효", accept:["유효"] },
         { type:"fill", prompt:"통지하여 보고함.", answer:"통보", accept:["통보"] },
         { type:"fill", prompt:"이미 있던 것을 고쳐 새롭게 함.", answer:"갱신", accept:["갱신"] }
-      ]
-    },
-    {
-      title: "문장에 어울리는 어휘를 고르세요",
-      items: [
-        { type:"mcq", prompt:"여권을 새로 만들려면 사진과 신분증을 가지고 가서 (　) 해야 한다.", options:["신청","제출"], answer:0 },
-        { type:"mcq", prompt:"봉사활동 확인서는 담당 선생님께 (　) 한다.", options:["첨부","제출"], answer:1 },
-        { type:"mcq", prompt:"이 문서는 관계자 외에는 (　) 할 수 없다.", options:["열람","통보"], answer:0 },
-        { type:"mcq", prompt:"이번 채용 (　)에는 지원 자격과 접수 기간이 나와 있다.", options:["공고","사본"], answer:0 }
-      ]
-    },
-    {
-      title: "밑줄 친 어휘의 뜻으로 알맞은 것을 고르세요",
-      items: [
-        { type:"mcq", prompt:"학생회는 축제 예산안을 학생부에 <b>제출</b>했다.", options:["의견이나 서류 등을 냄","검토 후 허가함","죽 훑어봄","다른 것으로 대신함"], answer:0 },
-        { type:"mcq", prompt:"이 자격증은 <b>유효</b> 기간이 5년이다.", options:["효력이 있음","거짓으로 판명됨","기간이 끝남","새로 만들어짐"], answer:0 },
-        { type:"mcq", prompt:"합격 여부는 문자로 <b>통보</b>한다.", options:["직접 확인함","통지하여 보고함","서류를 첨부함","기한을 정함"], answer:1 },
-        { type:"mcq", prompt:"신분증 원본이 없으면 <b>사본</b>이라도 가져오세요.", options:["원본을 그대로 옮긴 문서","새로 만든 문서","기한이 지난 문서","서명이 빠진 문서"], answer:0 }
-      ]
-    },
-    {
-      title: "안내문을 읽고 물음에 답하세요",
-      type: "passage",
+    ]},
+    { title: "문장에 어울리는 어휘를 고르세요", type: "choice", items: [
+      { type:"mcq", prompt:"여권을 새로 만들려면 사진과 신분증을 가지고 가서 (　) 해야 한다.", options:["신청","제출"], answer:0 },
+      { type:"mcq", prompt:"봉사활동 확인서는 담당 선생님께 (　) 한다.", options:["첨부","제출"], answer:1 },
+      { type:"mcq", prompt:"이 문서는 관계자 외에는 (　) 할 수 없다.", options:["열람","통보"], answer:0 },
+      { type:"mcq", prompt:"이번 채용 (　)에는 지원 자격과 접수 기간이 나와 있다.", options:["공고","사본"], answer:0 }
+    ]}
+  ]
+},
+
+/* ---------- Day 4: 확인 문제② + 읽기 적용 ---------- */
+"w01d4": {
+  intro: "밑줄 친 어휘의 뜻을 확인하고, 실제 안내문 속에서 어떻게 쓰이는지 살펴봅시다.",
+  sections: [
+    { title: "밑줄 친 어휘의 뜻으로 알맞은 것을 고르세요", type: "choice4", items: [
+      { type:"mcq", prompt:"학생회는 축제 예산안을 학생부에 <b>제출</b>했다.", options:["의견이나 서류 등을 냄","검토 후 허가함","죽 훑어봄","다른 것으로 대신함"], answer:0 },
+      { type:"mcq", prompt:"이 자격증은 <b>유효</b> 기간이 5년이다.", options:["효력이 있음","거짓으로 판명됨","기간이 끝남","새로 만들어짐"], answer:0 },
+      { type:"mcq", prompt:"합격 여부는 문자로 <b>통보</b>한다.", options:["직접 확인함","통지하여 보고함","서류를 첨부함","기한을 정함"], answer:1 },
+      { type:"mcq", prompt:"신분증 원본이 없으면 <b>사본</b>이라도 가져오세요.", options:["원본을 그대로 옮긴 문서","새로 만든 문서","기한이 지난 문서","서명이 빠진 문서"], answer:0 }
+    ]},
+    { title: "안내문을 읽고 물음에 답하세요", type: "passage",
       body: "[교내 방과후학교 프로그램 <b>신청</b> 안내]\n\n1. 신청 대상: 전교생\n2. 신청 <b>기한</b>: 8월 25일(월) ~ 8월 29일(금) — 이 기한을 넘기면 접수되지 않습니다.\n3. 신청 방법: 신청서를 작성해 담임 선생님께 <b>제출</b>하고, 학부모 동의서를 <b>첨부</b>합니다.\n   ※ 서명이 빠진 신청서는 <b>반려</b>되니 꼭 확인하세요.\n4. 결과 발표: 9월 1일(월), 선정 결과는 문자로 <b>통보</b>합니다.\n5. 유의 사항: 제출된 서류는 교무실에서만 <b>열람</b>할 수 있으며, 이번 학기에만 <b>유효</b>합니다.\n6. 문의: 자세한 내용은 교내 <b>공고</b>문을 참고하세요.",
       items: [
         { type:"mcq", prompt:"신청서를 낼 때 반드시 함께 내야 하는 것은?", options:["학부모 동의서","성적표","자기소개서","등본"], answer:0 },
@@ -165,6 +133,30 @@ Object.assign(DAY_CONTENT, {
       ]
     }
   ]
+},
+
+/* ---------- Day 5: 주간 종합복습 + 오늘의 명언 ---------- */
+"w01d5": {
+  intro: "이번 주에 배운 12개 어휘를 새로운 문장으로 마지막으로 점검해 봅시다.",
+  sections: [
+    { title: "뜻을 보고 어휘를 쓰세요", type: "fill", items: [
+      { type:"fill", prompt:"증명서 따위를 발행하여 내줌.", answer:"발급", accept:["발급"] },
+      { type:"fill", prompt:"문서나 물건 따위를 더 보탬.", answer:"첨부", accept:["첨부"] },
+      { type:"fill", prompt:"보람이나 효과가 있음.", answer:"유효", accept:["유효"] },
+      { type:"fill", prompt:"제출한 문서를 처리하지 않고 되돌려 보냄.", answer:"반려", accept:["반려"] },
+      { type:"fill", prompt:"원본을 그대로 옮기거나 복사한 문서.", answer:"사본", accept:["사본"] },
+      { type:"fill", prompt:"국가 기관이나 단체가 어떤 사항을 세상에 널리 알림.", answer:"공고", accept:["공고"] }
+    ]},
+    { title: "문장을 읽고 알맞은 어휘를 고르세요", type: "choice", items: [
+      { type:"mcq", prompt:"여권용 사진을 들고 가서 여권 (　)을 했다.", options:["신청","제출"], answer:0 },
+      { type:"mcq", prompt:"증명서는 무인 기기에서도 즉시 (　)받을 수 있다.", options:["발급","첨부"], answer:0 },
+      { type:"mcq", prompt:"서류 (　)을 넘기면 접수가 취소된다.", options:["기한","반려"], answer:0 },
+      { type:"mcq", prompt:"이 쿠폰은 이달 말까지만 (　)하다.", options:["유효","사본"], answer:0 },
+      { type:"mcq", prompt:"이 서류는 허락을 받아야 (　)할 수 있다.", options:["열람","갱신"], answer:0 },
+      { type:"mcq", prompt:"합격자에게는 문자로 결과를 (　)한다.", options:["통보","공고"], answer:0 }
+    ]}
+  ],
+  quote: { text: "오늘 할 수 있는 일을 내일로 미루지 마라.", author: "벤저민 프랭클린" }
 }
 
 });

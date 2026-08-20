@@ -1,7 +1,7 @@
 /* ===========================================================
-   문해력 15분 — 커리큘럼 스켈레톤
-   16주 x 주 2주제 = 32개 주제, 주제당 2일(익히기/확인+적용) + 금요일 복습
-   8주차·16주차 금요일은 25문항 형성평가로 대체
+   문해력 15분 — 커리큘럼 스켈레톤 (2차 개정)
+   32주(1년, 1학기 16주+2학기 16주) x 주 1주제 x 5일
+   8·16·24·32주차는 중간/기말고사 기간(내용은 별도 제작 예정)
    =========================================================== */
 
 const UNITS = [
@@ -14,7 +14,7 @@ const UNITS = [
   { id: "u7", name: "디지털·안전 문해력",   color: "#2aa7a1" },
 ];
 
-/* 32개 주제 순서 (주차는 자동 계산: topicIndex 1,2 → week1 / 3,4 → week2 ...) */
+/* 32개 주제 = 32주, 1주 1주제 */
 const TOPICS = [
   { unit: "u1", title: "공문서·행정 문서 읽기" },
   { unit: "u1", title: "금융·경제 생활" },
@@ -50,48 +50,45 @@ const TOPICS = [
   { unit: "u7", title: "SNS·온라인 소통 언어" },
 ];
 
-/* ---- 커리큘럼 자동 생성 (주차/일자/형성평가 배치) ---- */
+const EXAM_WEEKS = {
+  8:  { label: "중간고사", term: "1학기" },
+  16: { label: "기말고사", term: "1학기" },
+  24: { label: "중간고사", term: "2학기" },
+  32: { label: "기말고사", term: "2학기" },
+};
+
+const DAY_ROLES = [
+  { slot: 1, type: "learn",    tag: "학습①",  label: "어휘 학습① (단어 1~6 · 확인문제 1~3)" },
+  { slot: 2, type: "learn",    tag: "학습②",  label: "어휘 학습② (단어 7~12 · 확인문제 4~6 · 헷갈리는 어휘)" },
+  { slot: 3, type: "practice", tag: "확인①",  label: "확인 문제① (초성·글자카드·문장선택)" },
+  { slot: 4, type: "practice", tag: "확인②",  label: "확인 문제② + 읽기 적용 (밑줄뜻·안내문 지문)" },
+  { slot: 5, type: "review",   tag: "복습",    label: "주간 종합복습 + 오늘의 명언" },
+];
+
+/* ---- 커리큘럼 자동 생성 ---- */
 function buildCurriculum() {
   const weeks = [];
-  let topicIdx = 0;
+  const term1 = { id: "term1", name: "1학기", weeks: [1, 16] };
+  const term2 = { id: "term2", name: "2학기", weeks: [17, 32] };
 
-  for (let w = 1; w <= 16; w++) {
-    const weekTopics = [TOPICS[topicIdx], TOPICS[topicIdx + 1]];
-    topicIdx += 2;
+  for (let w = 1; w <= 32; w++) {
+    const topic = TOPICS[w - 1];
+    const wk = String(w).padStart(2, "0");
+    const days = DAY_ROLES.map(role => ({
+      id: `w${wk}d${role.slot}`,
+      week: w, slot: role.slot, type: role.type,
+      unit: topic.unit, topic: topic.title, topicNumber: w,
+      label: `${w}. ${topic.title} — ${role.label}`,
+      tag: role.tag,
+    }));
 
-    const days = [];
-    weekTopics.forEach((topic, slot) => {
-      const topicNumber = (w - 1) * 2 + slot + 1;
-      const dLearn = `w${String(w).padStart(2, "0")}d${String(slot * 2 + 1).padStart(2, "0")}`;
-      const dPractice = `w${String(w).padStart(2, "0")}d${String(slot * 2 + 2).padStart(2, "0")}`;
-      days.push({
-        id: dLearn, week: w, type: "learn",
-        unit: topic.unit, topic: topic.title, topicNumber,
-        label: `${topicNumber}. ${topic.title} — 어휘 익히기`,
-      });
-      days.push({
-        id: dPractice, week: w, type: "practice",
-        unit: topic.unit, topic: topic.title, topicNumber,
-        label: `${topicNumber}. ${topic.title} — 확인·적용`,
-      });
-    });
-
-    const isAssessmentWeek = (w === 8 || w === 16);
-    days.push({
-      id: `w${String(w).padStart(2, "0")}d05`,
+    weeks.push({
       week: w,
-      type: isAssessmentWeek ? "assessment" : "review",
-      unit: null,
-      topic: isAssessmentWeek
-        ? (w === 8 ? "형성평가 ① (1~16주제)" : "형성평가 ② (17~32주제)")
-        : `${w}주차 종합 복습`,
-      topicNumber: null,
-      label: isAssessmentWeek
-        ? (w === 8 ? "형성평가 ① · 25문항" : "형성평가 ② · 25문항")
-        : `${w}주차 금요 복습 (${weekTopics[0].title} · ${weekTopics[1].title})`,
+      term: w <= 16 ? "1학기" : "2학기",
+      topic,
+      exam: EXAM_WEEKS[w] || null,
+      days,
     });
-
-    weeks.push({ week: w, topics: weekTopics, days });
   }
   return weeks;
 }
