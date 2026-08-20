@@ -485,6 +485,17 @@ function renderQuizItem(item, num, state){
 /* ---------------- init ---------------- */
 function init(){
   initTheme();
+  if(!sessionStorage.getItem("moonhae15_splash_shown")){
+    renderSplash(() => {
+      sessionStorage.setItem("moonhae15_splash_shown", "1");
+      afterSplash();
+    });
+    return;
+  }
+  afterSplash();
+}
+
+function afterSplash(){
   if(!getStudent()){
     renderLogin();
     return;

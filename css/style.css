@@ -340,6 +340,29 @@ a{ color:inherit; }
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* ---------- splash ---------- */
+.splash-wrap{
+  position:fixed; inset:0; z-index:80; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.splash-card{
+  width:100%; max-width:420px; text-align:center;
+  background:var(--bg-elevated); border:1px solid var(--border);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow);
+  padding:44px 32px 36px;
+}
+.splash-logo{ width:76px; height:76px; margin:0 auto 20px; }
+.splash-logo svg{ width:100%; height:100%; display:block; }
+.splash-title{ display:flex; flex-direction:column; gap:4px; margin-bottom:18px; }
+.splash-title-sm{ font-size:16px; font-weight:700; color:var(--text-dim); }
+.splash-title-lg{
+  font-size:34px; font-weight:900; letter-spacing:-.01em;
+  background:linear-gradient(120deg,#5b6cf9,#a17bf0 45%,#f97bb0 85%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.splash-sub{ font-size:15px; font-weight:700; color:var(--text-faint); margin-bottom:26px; }
+.splash-btn{ padding:12px 30px; cursor:pointer; }
+
 /* ---------- login ---------- */
 body.pre-login .sidebar,
 body.pre-login #menuBtn,
