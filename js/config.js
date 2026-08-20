@@ -5,6 +5,6 @@
    비워두면(=""), 기록은 학생 기기(브라우저)에만 저장됩니다.
    ============================================================ */
 const APP_CONFIG = {
-  SHEET_WEBAPP_URL: "",   // 예: "https://script.google.com/macros/s/AKfycb.../exec"
+  SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbw2lsKm-Y5cWRESe3w7IgtkEjCron6cqlz-AEauVeXCiVsGuRZKGgW8RPRppdU7_eRf/exec",
   SCHOOL_NAME: "명품 경북여상 문해력 15분",
 };
