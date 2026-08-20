@@ -45,6 +45,7 @@ WEEK1 = {
             {"options": ("제출", "첨부"), "template": "봉사활동 확인서를 {0}할 때에는 활동 사진을 함께 {1}해야 인정받는다."},
             {"options": ("기한", "유효"), "template": "이 신분증은 12월까지만 {1}하며, 그 {0}이 지나면 다시 발급받아야 한다."},
         ],
+        "quote": {"text": "천릿길도 한 걸음부터 시작된다.", "author": "한국 속담"},
     },
 
     "d2": {
@@ -67,6 +68,7 @@ WEEK1 = {
             "right": {"term": "결재", "hanja": "決裁", "definition": "책임자가 안건을 검토하여 허가함.", "example": "부장님의 결재를 받았다."},
             "tip": "값을 '치르면' 결제, 서류를 '검토받으면' 결재!",
         },
+        "quote": {"text": "우리는 반복적으로 행하는 대로 된다. 탁월함은 행동이 아니라 습관이다.", "author": "아리스토텔레스"},
     },
 
     "d3": {
@@ -91,6 +93,7 @@ WEEK1 = {
                 {"prompt": "채용 (　)에는 지원 자격이 나와 있다.", "options": ["공고", "사본"]},
             ]},
         ],
+        "quote": {"text": "아는 것을 안다고 하고, 모르는 것을 모른다고 하는 것 — 그것이 진짜 아는 것이다.", "author": "공자"},
     },
 
     "d4": {
@@ -121,6 +124,7 @@ WEEK1 = {
                 {"prompt": "내용과 일치하지 않는 것은?", "options": ["대상은 전교생", "결과는 이메일 통보", "교무실에서만 열람", "서명 없으면 반려"]},
             ],
         },
+        "quote": {"text": "좋은 책을 읽는 것은 과거의 가장 훌륭한 사람들과 대화를 나누는 것과 같다.", "author": "르네 데카르트"},
     },
 
     "d5": {
@@ -298,7 +302,7 @@ def word_cell_content(cell, idx, w):
     tr = inner.rows[1]._tr
     trPr = tr.get_or_add_trPr()
     trh = OxmlElement("w:trHeight")
-    trh.set(qn("w:val"), "320")
+    trh.set(qn("w:val"), "280")
     trh.set(qn("w:hRule"), "atLeast")
     trPr.append(trh)
 
@@ -435,7 +439,7 @@ def set_cell_border_bottom_only(cell, size=6, color="9AA0C3"):
     tcPr.append(borders)
 
 
-def writing_lines(doc, count=2, row_height=380):
+def writing_lines(doc, count=2, row_height=300):
     """서로 분리된 줄로 확실히 보이는 밑줄(표 기반). 문단 테두리는 인접하면 하나로 합쳐 보이는 문제가 있어 표로 대체."""
     table = doc.add_table(rows=count, cols=1)
     for row in table.rows:
@@ -473,7 +477,7 @@ def quote_box(doc, quote):
     keep_table_together(table)
     cell = table.rows[0].cells[0]
     set_cell_shading(cell, "F7F8FF")
-    set_cell_margins(cell, 110, 110, 200, 200)
+    set_cell_margins(cell, 80, 80, 180, 180)
     qp = cell.paragraphs[0]
     tight(qp, 0, 3)
     qp.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -488,8 +492,25 @@ def quote_box(doc, quote):
     set_run_font(arun, size=9, color=GRAY)
 
     guide = p(doc, "✍ 위 명언을 소리 내어 한 번 읽고, 나만의 글씨체로 또박또박 따라 써 보세요.",
-              size=8.8, color=GRAY, before=6, after=4)
+              size=8.8, color=GRAY, before=4, after=2)
     writing_lines(doc, count=2)
+
+
+def todo_box(doc, count=3):
+    p(doc, "✅ 오늘 해야 할 일", size=10, bold=True, color=ACCENT, before=2, after=4)
+    table = doc.add_table(rows=1, cols=count)
+    table.style = "Table Grid"
+    keep_table_together(table)
+    col_w = 17.8 / count
+    for i in range(count):
+        cell = table.rows[0].cells[i]
+        cell.width = Cm(col_w)
+        set_cell_margins(cell, 55, 55, 90, 90)
+        para = cell.paragraphs[0]
+        tight(para, 0, 0)
+        run = para.add_run("☐ ")
+        set_run_font(run, size=11, color=GRAY)
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
 
 def base_document():
@@ -497,8 +518,8 @@ def base_document():
     section = doc.sections[0]
     section.page_height = Cm(29.7)
     section.page_width = Cm(21.0)
-    section.top_margin = Cm(1.3)
-    section.bottom_margin = Cm(1.2)
+    section.top_margin = Cm(1.0)
+    section.bottom_margin = Cm(0.9)
     section.left_margin = Cm(1.6)
     section.right_margin = Cm(1.6)
 
@@ -528,6 +549,7 @@ def render_sections(doc, sections):
 def build_day(topic, day_key, day, out_path):
     doc = base_document()
     info_header(doc, topic["week"], topic["topic"], f"Day {day_key[1]} · {day['tag']}", day["intro"])
+    todo_box(doc, count=3)
 
     if "words" in day:  # 학습 day
         word_grid(doc, day["words"])
@@ -541,12 +563,27 @@ def build_day(topic, day_key, day, out_path):
         render_sections(doc, day.get("sections", []))
         if day.get("passage"):
             passage_box(doc, day["passage"])
-        if day.get("quote"):
+        if day_key == "d5":
             reflection_block(doc)
-            quote_box(doc, day["quote"])
 
-    doc.save(out_path)
+    if day.get("quote"):
+        quote_box(doc, day["quote"])
+
+    save_with_retry(doc, out_path)
     print("saved", out_path)
+
+
+def save_with_retry(doc, out_path, attempts=6, delay=1.0):
+    """OneDrive가 방금 만든 파일을 잠깐 동기화하며 잠그는 경우가 있어 재시도한다."""
+    import time
+    for i in range(attempts):
+        try:
+            doc.save(out_path)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(delay)
 
 
 def build_week(topic, out_prefix):
