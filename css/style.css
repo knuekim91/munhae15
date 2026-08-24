@@ -179,6 +179,11 @@ a{ color:inherit; }
 .day-item.done .day-dot::after{ content:"✓"; color:#fff; font-size:9px; }
 .day-item.locked{ opacity:.5; }
 
+.exam-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.exam-section-head{ cursor:default; }
+.exam-section-head:hover{ background:none; }
+.exam-file-item{ text-decoration:none; }
+
 .day-dot{
   width:18px; height:18px; border-radius:50%; flex:none;
   border:2px solid var(--text-faint);

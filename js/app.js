@@ -81,6 +81,32 @@ function renderSidebar(){
   nav.innerHTML = "";
   const currentId = location.hash.replace("#","") || "";
 
+  if(typeof EXAM_LIST !== "undefined" && EXAM_LIST.length){
+    const examGroup = document.createElement("div");
+    examGroup.className = "week-group exam-group open";
+
+    const examHead = document.createElement("div");
+    examHead.className = "week-head exam-section-head";
+    examHead.innerHTML = `<span class="week-title">📝 정기고사</span>`;
+    examGroup.appendChild(examHead);
+
+    const examList = document.createElement("div");
+    examList.className = "week-days";
+    EXAM_LIST.forEach(ex => {
+      const item = document.createElement("a");
+      item.className = "day-item exam-file-item";
+      item.href = encodeURI(ex.file);
+      item.target = "_blank";
+      item.rel = "noopener";
+      item.innerHTML = `
+        <span class="day-type-icon">📝</span>
+        <span class="day-label">${ex.term} ${ex.label}</span>`;
+      examList.appendChild(item);
+    });
+    examGroup.appendChild(examList);
+    nav.appendChild(examGroup);
+  }
+
   CURRICULUM.forEach(wk => {
     const group = document.createElement("div");
     group.className = "week-group";

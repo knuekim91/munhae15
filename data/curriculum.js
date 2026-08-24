@@ -51,11 +51,17 @@ const TOPICS = [
 ];
 
 const EXAM_WEEKS = {
-  8:  { label: "중간고사", term: "1학기" },
-  16: { label: "기말고사", term: "1학기" },
-  24: { label: "중간고사", term: "2학기" },
-  32: { label: "기말고사", term: "2학기" },
+  8:  { label: "중간고사", term: "1학기", file: "worksheets/정기고사/1학기_중간고사_문해력15분.pdf" },
+  16: { label: "기말고사", term: "1학기", file: "worksheets/정기고사/1학기_기말고사_문해력15분.pdf" },
+  24: { label: "중간고사", term: "2학기", file: "worksheets/정기고사/2학기_중간고사_문해력15분.pdf" },
+  32: { label: "기말고사", term: "2학기", file: "worksheets/정기고사/2학기_기말고사_문해력15분.pdf" },
 };
+
+/* 사이드바 상단 "정기고사" 메뉴용 목록 */
+const EXAM_LIST = Object.keys(EXAM_WEEKS)
+  .map(Number)
+  .sort((a, b) => a - b)
+  .map(week => ({ week, ...EXAM_WEEKS[week] }));
 
 const DAY_ROLES = [
   { slot: 1, type: "learn",    tag: "학습①",  label: "어휘 학습① (단어 1~6 · 확인문제 1~3)" },
