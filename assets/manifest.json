@@ -1,0 +1,16 @@
+{
+  "name": "명품 경북여상 문해력 15분",
+  "short_name": "문해력15",
+  "description": "특성화고 학생을 위한 하루 15분 문해력 학습",
+  "start_url": "../index.html",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#f5f6fb",
+  "theme_color": "#5b6cf9",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
