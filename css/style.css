@@ -287,7 +287,7 @@ a{ color:inherit; }
 .fill-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .fill-input{
   border:1.5px solid var(--border); border-radius:var(--radius-sm);
-  padding:10px 14px; font-size:15px; font-family:inherit; width:180px;
+  padding:10px 14px; font-size:16px; font-family:inherit; width:180px;
   background:var(--bg-elevated); color:var(--text);
 }
 .fill-input:focus{ outline:none; border-color:var(--accent); }
