@@ -182,10 +182,13 @@ a{ color:inherit; }
 .day-item.done .day-dot::after{ content:"✓"; color:#fff; font-size:9px; }
 .day-item.locked{ opacity:.5; }
 
-.exam-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+/* 중간·기말고사는 휴대폰 5지선다 앱 문제로 대체 예정이라, 당분간
+   비활성화된 것처럼 흐리게 표시(파일은 그대로 열람 가능) */
+.exam-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); opacity:.45; }
 .exam-section-head{ cursor:default; }
 .exam-section-head:hover{ background:none; }
 .exam-file-item{ text-decoration:none; }
+.exam-file-item:hover{ background:none; }
 
 .day-dot{
   width:18px; height:18px; border-radius:50%; flex:none;
