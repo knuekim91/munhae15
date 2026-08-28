@@ -10,7 +10,7 @@ function renderSplash(onDone){
       <div class="splash-year">2026</div>
       <div class="splash-title">
         <span class="splash-title-sm">미래를 향해 준비하는</span>
-        <span class="splash-title-lg">경북여상</span>
+        <span class="splash-title-lg">${"경북여상".split("").map(c => `<span class="title-char">${c}</span>`).join("")}</span>
       </div>
       <div class="splash-sub">명품 경북여상 문해력 앱</div>
       <button class="btn btn-primary splash-btn" id="splashStartBtn">시작하기</button>
