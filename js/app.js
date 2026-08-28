@@ -30,23 +30,62 @@ let PROGRESS = { completed:{}, scores:{}, streak:0, lastDate:null };
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
+/* 오늘 이미 다른 회차를 완료해서, 새 회차(dayId)를 오늘 더 진행할 수 없는지 여부 */
+function dailyLimitBlocks(dayId){
+  if(PROGRESS.completed[dayId]) return false; // 이미 완료한 회차는 다시 봐도 무방
+  const today = todayStr();
+  return PROGRESS.lastDate === today && !!PROGRESS.lastCompletedId && PROGRESS.lastCompletedId !== dayId;
+}
+
 function markComplete(dayId, score){
-  if(score !== undefined) PROGRESS.scores[dayId] = score;
+  const today = todayStr();
   const already = PROGRESS.completed[dayId];
+
+  if(!already && dailyLimitBlocks(dayId)){
+    toast("오늘 학습은 이미 완료했어요! 내일 다시 이어서 해요 🌙");
+    return false;
+  }
+
+  if(score !== undefined) PROGRESS.scores[dayId] = score;
   PROGRESS.completed[dayId] = true;
 
   if(!already){
-    const today = todayStr();
     if(PROGRESS.lastDate !== today){
       const yest = new Date(Date.now() - 864e5).toISOString().slice(0,10);
       PROGRESS.streak = (PROGRESS.lastDate === yest) ? (PROGRESS.streak||0) + 1 : 1;
-      PROGRESS.lastDate = today;
     }
+    PROGRESS.lastDate = today;
+    PROGRESS.lastCompletedId = dayId;
   }
   saveProgress(PROGRESS);
   renderSidebar();
   updateHeader();
   logActivity(findDay(dayId), score);
+  return true;
+}
+
+/* 학습 완료 후 "다음 학습으로" 이동 버튼 / 안내 문구 */
+function appendNextAction(row, dayId){
+  const nextId = (typeof nextDayId === "function") ? nextDayId(dayId) : null;
+  const note = document.createElement("div");
+  note.className = "page-sub";
+  note.style.margin = "12px 0 0";
+
+  if(!nextId){
+    note.textContent = "🎉 모든 커리큘럼을 완료했어요!";
+    row.parentNode.insertBefore(note, row.nextSibling);
+    return;
+  }
+  if(dailyLimitBlocks(nextId)){
+    note.textContent = "오늘 학습은 여기까지! 다음 학습은 내일 이어서 할 수 있어요 🌙";
+    row.parentNode.insertBefore(note, row.nextSibling);
+    return;
+  }
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "btn btn-ghost";
+  nextBtn.textContent = "다음 학습으로 →";
+  nextBtn.addEventListener("click", () => { location.hash = nextId; });
+  row.appendChild(nextBtn);
 }
 
 function totalDayCount(){
@@ -185,7 +224,9 @@ function router(){
 
   renderCrumb(content, day);
 
-  if(!data){
+  if(data && dailyLimitBlocks(id)){
+    renderDailyLimitNotice(content, day);
+  } else if(!data){
     renderPlaceholder(content, day);
   } else if(day.type === "learn"){
     renderLearnDay(content, day, data);
@@ -206,6 +247,16 @@ function renderCrumb(content, day){
     ? `<span class="unit-chip" style="background:${unit.color}">${unit.name}</span><span>${day.week}주차</span>`
     : `<span class="unit-chip" style="background:#94989f">${day.week}주차</span>`;
   content.appendChild(crumb);
+}
+
+function renderDailyLimitNotice(content, day){
+  const card = document.createElement("div");
+  card.className = "card placeholder-card";
+  card.innerHTML = `
+    <div class="placeholder-emoji">🌙</div>
+    <div style="font-weight:800;font-size:16px;margin-bottom:6px;">오늘 학습은 이미 완료했어요!</div>
+    <div>하루에 한 회차씩 차근차근 학습해요. '${day.label}'은(는) 내일 이어서 진행할 수 있어요.</div>`;
+  content.appendChild(card);
 }
 
 function renderPlaceholder(content, day){
@@ -251,12 +302,14 @@ function renderLearnDay(content, day, data){
   const done = PROGRESS.completed[day.id];
   btn.textContent = done ? "✓ 학습 완료됨" : "오늘 어휘 학습 완료";
   btn.addEventListener("click", () => {
-    markComplete(day.id);
+    if(!markComplete(day.id)) return;
     btn.textContent = "✓ 학습 완료됨";
     toast("잘했어요! 내일은 확인 문제로 복습해요 🙌");
+    appendNextAction(row, day.id);
   });
   row.appendChild(btn);
   content.appendChild(row);
+  if(done) appendNextAction(row, day.id);
 }
 
 function renderWordCard(w, idx){
@@ -416,15 +469,18 @@ function buildQuizFlow(content, day, data, completeMsg){
     let correct = 0;
     state.checks.forEach(fn => { if(fn()) correct++; });
     const pct = Math.round((correct/state.total)*100);
+
+    if(!markComplete(day.id, pct)) return;
+
     resultCard.style.display = "block";
     resultCard.innerHTML = `
       <div class="result-emoji">${pct>=80?"🎉":pct>=60?"👍":"💪"}</div>
       <div class="result-score">${correct} / ${state.total}</div>
       <div class="result-msg">${pct}점 · ${pct>=80?"완벽해요! 어휘를 확실히 익혔네요.":pct>=60?"잘했어요! 틀린 부분을 다시 살펴보세요.":"조금 더 복습이 필요해요. 어휘 익히기 페이지를 다시 볼까요?"}</div>`;
     resultCard.scrollIntoView({behavior:"smooth", block:"center"});
-    markComplete(day.id, pct);
     checkBtn.textContent = "다시 채점";
     toast(completeMsg || "채점 완료!");
+    appendNextAction(row, day.id);
   });
   row.appendChild(checkBtn);
   content.appendChild(row);

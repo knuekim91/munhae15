@@ -113,11 +113,27 @@ function findDay(dayId) {
   return null;
 }
 
+/* 콘텐츠가 있는 회차만 순서대로 나열한 id 목록 */
+function contentDayIds() {
+  const ids = [];
+  CURRICULUM.forEach(wk => wk.days.forEach(d => {
+    if (typeof DAY_CONTENT !== "undefined" && DAY_CONTENT[d.id]) ids.push(d.id);
+  }));
+  return ids;
+}
+
+/* 로그인 시 이어서 학습할 회차: 완료하지 않은 첫 회차 (모두 완료했다면 마지막 회차) */
 function firstAvailableDay() {
-  for (const wk of CURRICULUM) {
-    for (const d of wk.days) {
-      if (typeof DAY_CONTENT !== "undefined" && DAY_CONTENT[d.id]) return d.id;
-    }
-  }
-  return CURRICULUM[0].days[0].id;
+  const ids = contentDayIds();
+  const done = (typeof PROGRESS !== "undefined" && PROGRESS.completed) || {};
+  const next = ids.find(id => !done[id]);
+  return next || ids[ids.length - 1] || CURRICULUM[0].days[0].id;
+}
+
+/* 특정 회차 다음으로 콘텐츠가 있는 회차의 id (없으면 null) */
+function nextDayId(dayId) {
+  const ids = contentDayIds();
+  const idx = ids.indexOf(dayId);
+  if (idx === -1 || idx === ids.length - 1) return null;
+  return ids[idx + 1];
 }
