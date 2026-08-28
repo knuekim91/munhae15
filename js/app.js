@@ -8,10 +8,21 @@ const TYPE_META = {
   review:   { icon: "🔄" },
 };
 
+/* 흔한 두 글자 성(복성) — 이 성이면 앞 두 글자를 이름에서 뗀다 */
+const COMPOUND_SURNAMES = ["남궁","황보","제갈","선우","독고","사공","서문","동방","어금","망절","공손"];
+
+/* 성을 뗀 이름만 반환 (예: "김보민" → "보민", "황보수림" → "수림") */
+function givenName(fullName){
+  if(!fullName) return "";
+  const prefix2 = fullName.slice(0, 2);
+  if(fullName.length >= 3 && COMPOUND_SURNAMES.includes(prefix2)) return fullName.slice(2);
+  return fullName.length >= 2 ? fullName.slice(1) : fullName;
+}
+
 /* 한글 이름 부름말 조사(받침 유무에 따라 "아"/"야") + 이름 없으면 빈 문자열 */
 function nameCall(){
   const student = getStudent();
-  const name = student && student.name;
+  const name = givenName(student && student.name);
   if(!name) return "";
   const last = name.charCodeAt(name.length - 1);
   if(last < 0xAC00 || last > 0xD7A3) return `${name}! `;
