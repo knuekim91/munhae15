@@ -9,7 +9,8 @@ var HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "�
 
 var WINNER_SHEET_NAME = "행운의7명";
 var WINNER_HEADER = ["추첨일", "학번코드", "학년", "반", "번호", "이름"];
-var DAILY_CUTOFF = "08:43:00";   // 이 시각까지 완료해야 그날 인정
+var DAILY_START = "08:30:00";    // 이 시각 이후에 완료해야 그날 인정
+var DAILY_CUTOFF = "08:45:00";   // 이 시각까지 완료해야 그날 인정
 var WINNER_COUNT = 7;
 
 function doPost(e) {
@@ -112,7 +113,7 @@ function typeLabel_(type) {
 
 /* =========================================================================
    금요일 "행운의 7명" 추첨
-   자격: 이번 주(월~금) 매일 08:43 이전에 학습을 완료한 학생
+   자격: 이번 주(월~금) 매일 08:30~08:45 사이에 학습을 완료한 학생
    ========================================================================= */
 
 function getWinnerSheet_() {
@@ -181,7 +182,7 @@ function pickWeeklyWinners() {
     var date = dt.date;
     var time = dt.time;
     if (weekDates.indexOf(date) === -1) continue;
-    if (time > DAILY_CUTOFF) continue;
+    if (time < DAILY_START || time > DAILY_CUTOFF) continue;
 
     var sid = String(row[1]);
     if (!map[sid]) {
