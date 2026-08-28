@@ -8,6 +8,17 @@ const TYPE_META = {
   review:   { icon: "🔄" },
 };
 
+/* 한글 이름 부름말 조사(받침 유무에 따라 "아"/"야") + 이름 없으면 빈 문자열 */
+function nameCall(){
+  const student = getStudent();
+  const name = student && student.name;
+  if(!name) return "";
+  const last = name.charCodeAt(name.length - 1);
+  if(last < 0xAC00 || last > 0xD7A3) return `${name}! `;
+  const hasBatchim = (last - 0xAC00) % 28 !== 0;
+  return `${name}${hasBatchim ? "아" : "야"}! `;
+}
+
 /* ---------------- progress store (학생별로 분리 저장) ---------------- */
 function progressKey(){
   const s = getStudent();
@@ -316,7 +327,7 @@ function renderLearnDay(content, day, data){
   btn.textContent = done ? "✓ 학습 완료됨" : "오늘 어휘 학습 완료";
   btn.addEventListener("click", () => {
     if(!done && checkpointTracker.done.size < checkpointTracker.total){
-      toast("잠깐! 위에 숨어있는 Q1~Q" + checkpointTracker.total + " 확인 문제부터 살짝 풀고 와주세요 🕵️‍♀️✨");
+      toast(`${nameCall()}Q1~Q${checkpointTracker.total} 중 안 푼 문제가 있구나! 그걸 다 해결해야 완료 버튼이 눌러져 ^^`);
       return;
     }
     if(!markComplete(day.id)) return;
