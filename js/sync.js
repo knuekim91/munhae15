@@ -24,17 +24,24 @@ function sendToSheet(payload){
     .catch(() => queuePending(payload));
 }
 
-/** 응답이 필요한 요청(로그인·비밀번호·관리자 기능)용. 연동 안 됐거나 실패하면 null. */
-async function postToSheet(payload){
+/**
+ * 응답이 필요한 요청(로그인·비밀번호·관리자 기능)용. 연동 안 됐거나 계속 실패하면 null.
+ * 다수 학생이 한꺼번에 몰려 Apps Script가 순간적으로 응답을 못 줄 때를 대비해
+ * 실패 시 짧게 대기 후 최대 2번 재시도한다.
+ */
+async function postToSheet(payload, retries = 2){
   const url = endpointUrl();
   if(!url) return null;
-  try{
-    const res = await fetch(url, { method: "POST", body: JSON.stringify(payload) });
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){
-    return null;
+  for(let attempt = 0; attempt <= retries; attempt++){
+    try{
+      const res = await fetch(url, { method: "POST", body: JSON.stringify(payload) });
+      if(res.ok) return await res.json();
+    }catch(e){
+      // 네트워크 오류 — 아래에서 재시도
+    }
+    if(attempt < retries) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
   }
+  return null;
 }
 
 function flushPending(){
