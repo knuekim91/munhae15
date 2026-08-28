@@ -379,8 +379,17 @@ a{ color:inherit; }
 .splash-title-sm{ font-size:16px; font-weight:700; color:var(--text-dim); }
 .splash-title-lg{
   font-size:34px; font-weight:900; letter-spacing:-.01em;
-  background:linear-gradient(120deg,#5b6cf9,#a17bf0 45%,#f97bb0 85%);
+  background:linear-gradient(100deg,
+    #5b6cf9 0%, #a17bf0 22%, #f97bb0 40%,
+    #fff 48%, #fff 52%,
+    #f97bb0 60%, #a17bf0 78%, #5b6cf9 100%);
+  background-size:260% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:titleShine 4s ease-in-out infinite;
+}
+@keyframes titleShine{
+  0%, 100%{ background-position:220% 0; }
+  50%{ background-position:-120% 0; }
 }
 .splash-sub{ font-size:15px; font-weight:700; color:var(--text-faint); margin-bottom:26px; }
 .splash-btn{
