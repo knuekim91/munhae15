@@ -154,14 +154,18 @@ function renderSidebar(){
     const examList = document.createElement("div");
     examList.className = "week-days";
     EXAM_LIST.forEach(ex => {
-      const item = document.createElement("a");
+      const hasFile = !!ex.file;
+      const item = document.createElement(hasFile ? "a" : "div");
       item.className = "day-item exam-file-item";
-      item.href = encodeURI(ex.file);
-      item.target = "_blank";
-      item.rel = "noopener";
+      if(hasFile){
+        item.href = encodeURI(ex.file);
+        item.target = "_blank";
+        item.rel = "noopener";
+      }
       item.innerHTML = `
         <span class="day-type-icon">📝</span>
-        <span class="day-label">${ex.term} ${ex.label}</span>`;
+        <span class="day-label">${ex.term} ${ex.label}</span>
+        ${hasFile ? "" : `<span class="day-tag">시험 직전 공개</span>`}`;
       examList.appendChild(item);
     });
     examGroup.appendChild(examList);

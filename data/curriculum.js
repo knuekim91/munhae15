@@ -50,11 +50,13 @@ const TOPICS = [
   { unit: "u7", title: "SNS·온라인 소통 언어" },
 ];
 
+/* 시험 파일은 정답이 포함돼 있어 공개 저장소에 두지 않고, 시험 직전에만
+   구글 드라이브 링크(file)를 채워 넣는다. 평소엔 file: null로 비활성 표시. */
 const EXAM_WEEKS = {
-  8:  { label: "중간고사", term: "1학기", file: "worksheets/정기고사/1학기_중간고사_문해력15분.pdf" },
-  16: { label: "기말고사", term: "1학기", file: "worksheets/정기고사/1학기_기말고사_문해력15분.pdf" },
-  24: { label: "중간고사", term: "2학기", file: "worksheets/정기고사/2학기_중간고사_문해력15분.pdf" },
-  32: { label: "기말고사", term: "2학기", file: "worksheets/정기고사/2학기_기말고사_문해력15분.pdf" },
+  8:  { label: "중간고사", term: "1학기", file: null },
+  16: { label: "기말고사", term: "1학기", file: null },
+  24: { label: "중간고사", term: "2학기", file: null },
+  32: { label: "기말고사", term: "2학기", file: null },
 };
 
 /* 사이드바 상단 "정기고사" 메뉴용 목록 */
