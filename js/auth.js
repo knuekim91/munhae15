@@ -61,6 +61,16 @@ function renderLogin(){
   [ "loginGrade","loginClass","loginNumber" ].forEach(id => {
     document.getElementById(id).addEventListener("input", scheduleNameHint);
   });
+  // 학년 1자리 입력 → 반으로, 반 1자리 입력 → 번호로, 번호 2자리(최대 길이) 입력 → 비밀번호로 자동 이동
+  document.getElementById("loginGrade").addEventListener("input", e => {
+    if(e.target.value.length >= 1) document.getElementById("loginClass").focus();
+  });
+  document.getElementById("loginClass").addEventListener("input", e => {
+    if(e.target.value.length >= 1) document.getElementById("loginNumber").focus();
+  });
+  document.getElementById("loginNumber").addEventListener("input", e => {
+    if(e.target.value.length >= 2) document.getElementById("loginPassword").focus();
+  });
   [ "loginGrade","loginClass","loginNumber","loginPassword" ].forEach(id => {
     document.getElementById(id).addEventListener("keydown", e => { if(e.key === "Enter") submitLogin(); });
   });
@@ -86,6 +96,10 @@ async function updateNameHint(){
     hint.hidden = true;
     return;
   }
+
+  hint.textContent = "🔍 이름을 확인 중입니다";
+  hint.className = "login-name-hint loading";
+  hint.hidden = false;
 
   const name = await fetchRosterName(grade, cls, number);
 
