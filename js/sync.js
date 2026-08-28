@@ -55,6 +55,23 @@ function flushPending(){
   });
 }
 
+/**
+ * 학년·반·번호로 명렬 이름만 조회(비밀번호 확인 없음, 로그인 화면 실시간 미리보기용).
+ * 연동 안 됐거나 통신 실패면 undefined, 명렬에 없으면 null, 있으면 이름 문자열.
+ */
+async function fetchRosterName(grade, cls, number){
+  const url = endpointUrl();
+  if(!url) return undefined;
+  try{
+    const res = await fetch(`${url}?rosterLookup=1&grade=${encodeURIComponent(grade)}&cls=${encodeURIComponent(cls)}&number=${encodeURIComponent(number)}`);
+    if(!res.ok) return undefined;
+    const data = await res.json();
+    return (data && data.status === "ok") ? data.name : undefined;
+  }catch(e){
+    return undefined;
+  }
+}
+
 /** 구글 시트에서 특정 학생의 점수 기록을 가져온다. 연동 안 됐거나 실패하면 null. */
 async function fetchScoreHistory(studentId){
   const url = endpointUrl();

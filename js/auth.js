@@ -41,6 +41,7 @@ function renderLogin(){
             <input id="loginNumber" type="number" min="1" max="99" placeholder="2" inputmode="numeric">
           </label>
         </div>
+        <div id="loginNameHint" class="login-name-hint" hidden></div>
         <label class="login-field login-name">
           <span>비밀번호</span>
           <input id="loginPassword" type="password" placeholder="비밀번호" autocomplete="current-password">
@@ -57,11 +58,55 @@ function renderLogin(){
     </div>`;
 
   document.getElementById("loginBtn").addEventListener("click", submitLogin);
+  [ "loginGrade","loginClass","loginNumber" ].forEach(id => {
+    document.getElementById(id).addEventListener("input", scheduleNameHint);
+  });
   [ "loginGrade","loginClass","loginNumber","loginPassword" ].forEach(id => {
     document.getElementById(id).addEventListener("keydown", e => { if(e.key === "Enter") submitLogin(); });
   });
   document.getElementById("loginAdminLink").addEventListener("click", openAdminAuthModal);
   document.getElementById("loginGrade").focus();
+}
+
+/* 학년·반·번호를 입력하는 대로(디바운스) 명렬에서 이름을 미리 찾아 보여준다 */
+let nameHintTimer = null;
+function scheduleNameHint(){
+  clearTimeout(nameHintTimer);
+  nameHintTimer = setTimeout(updateNameHint, 400);
+}
+
+async function updateNameHint(){
+  const hint = document.getElementById("loginNameHint");
+  if(!hint) return;
+  const grade = document.getElementById("loginGrade").value.trim();
+  const cls = document.getElementById("loginClass").value.trim();
+  const number = document.getElementById("loginNumber").value.trim();
+
+  if(!grade || !cls || !number || !sheetConnected()){
+    hint.hidden = true;
+    return;
+  }
+
+  const name = await fetchRosterName(grade, cls, number);
+
+  // 응답이 오는 사이 입력값이 바뀌었으면 무시(느린 응답으로 엉뚱한 이름이 뜨는 것 방지)
+  const stillSame =
+    document.getElementById("loginGrade").value.trim() === grade &&
+    document.getElementById("loginClass").value.trim() === cls &&
+    document.getElementById("loginNumber").value.trim() === number;
+  if(!stillSame) return;
+
+  if(name === undefined){
+    hint.hidden = true;
+  } else if(name){
+    hint.textContent = `✅ ${name} 학생 맞나요?`;
+    hint.className = "login-name-hint ok";
+    hint.hidden = false;
+  } else {
+    hint.textContent = "❓ 명렬에서 찾을 수 없어요. 학년·반·번호를 다시 확인해 주세요.";
+    hint.className = "login-name-hint warn";
+    hint.hidden = false;
+  }
 }
 
 async function submitLogin(){

@@ -44,6 +44,11 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", winners: getLatestWinners_() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+  if (e.parameter && e.parameter.rosterLookup) {
+    var name = findRosterName_(e.parameter.grade, e.parameter.cls, e.parameter.number);
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", name: name }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   return ContentService.createTextOutput(JSON.stringify({ status: "ok", message: "문해력 15분 기록 API" }))
     .setMimeType(ContentService.MimeType.JSON);
 }
