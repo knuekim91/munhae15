@@ -380,36 +380,26 @@ a{ color:inherit; }
 .splash-title-lg{
   font-size:34px; font-weight:900; letter-spacing:-.01em;
 }
-/* 그라데이션·글자클립은 각 글자(.title-char)에 직접 줘야 실제로 보인다 —
-   부모에만 주면 부모 자신은 직접 텍스트가 없어 클립할 글자가 없어서
-   아무것도 안 보이는 버그가 생김. */
+/* 그라데이션 배경-클리핑 방식이 일부 환경에서 안 보이는 문제가 있어,
+   글자마다 고정 색상 + 밝기/글로우 애니메이션만 쓰는 방식으로 변경.
+   (배경 클리핑에 의존하지 않아 어떤 브라우저에서도 확실히 보인다) */
 .title-char{
   display:inline-block;
-  background:linear-gradient(100deg,
-    #5b6cf9 0%, #a17bf0 22%, #f97bb0 40%,
-    #fff 48%, #fff 52%,
-    #f97bb0 60%, #a17bf0 78%, #5b6cf9 100%);
-  background-size:260% 100%;
-  -webkit-background-clip:text; background-clip:text; color:transparent;
-  animation: titleCharPop 6s ease-in-out infinite, titleShine 6s ease-in-out infinite;
+  animation: titleCharCombined 6s ease-in-out infinite;
 }
-/* 첫 번째 값은 titleCharPop(순서대로 켜지는 딜레이), 두 번째 값은
-   titleShine(전 글자가 같은 타이밍에 훑이도록 항상 0s)에 대응 */
-.title-char:nth-child(1){ animation-delay:0s, 0s; }
-.title-char:nth-child(2){ animation-delay:.25s, 0s; }
-.title-char:nth-child(3){ animation-delay:.5s, 0s; }
-.title-char:nth-child(4){ animation-delay:.75s, 0s; }
-/* 0~42%는 글자가 켜지는 동안 정지, 42~70% 구간에서 샤인이 훑고 지나감 */
-@keyframes titleShine{
-  0%, 42%, 100%{ background-position:220% 0; }
-  70%{ background-position:-120% 0; }
-}
-/* 모두 꺼진 상태 → 순서대로 반짝 켜짐 → 잠깐 유지 → 다시 꺼짐(반복) */
-@keyframes titleCharPop{
-  0%{ opacity:0; filter:brightness(.4) drop-shadow(0 0 0 rgba(255,255,255,0)); }
-  6%{ opacity:1; filter:brightness(2) drop-shadow(0 0 14px rgba(255,255,255,.85)); }
-  16%, 82%{ opacity:1; filter:brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); }
-  92%, 100%{ opacity:0; filter:brightness(.4) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+.title-char:nth-child(1){ color:#5b6cf9; animation-delay:0s; }
+.title-char:nth-child(2){ color:#8b7bf3; animation-delay:.25s; }
+.title-char:nth-child(3){ color:#d17cc8; animation-delay:.5s; }
+.title-char:nth-child(4){ color:#f97bb0; animation-delay:.75s; }
+/* 0%: 꺼짐 → 6%: 순서대로 팟! 켜짐 → 16~44%: 유지
+   → 50%: 다시 한 번 순서대로 반짝(샤인 대체) → 58~84%: 유지 → 92~100%: 꺼짐(반복) */
+@keyframes titleCharCombined{
+  0%{ opacity:0; filter:brightness(.5) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  6%{ opacity:1; filter:brightness(1.7) drop-shadow(0 0 10px rgba(255,255,255,.6)); }
+  16%, 44%{ opacity:1; filter:brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  50%{ opacity:1; filter:brightness(2.1) drop-shadow(0 0 16px rgba(255,255,255,.9)); }
+  58%, 84%{ opacity:1; filter:brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  92%, 100%{ opacity:0; filter:brightness(.5) drop-shadow(0 0 0 rgba(255,255,255,0)); }
 }
 .splash-sub{ font-size:15px; font-weight:700; color:var(--text-faint); margin-bottom:26px; }
 .splash-btn{
