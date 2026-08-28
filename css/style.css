@@ -501,4 +501,17 @@ body.pre-login .streak-chip{ display:none; }
   .day-item{ font-size:14.5px; padding:11px 10px 11px 14px; }
   .day-tag{ font-size:11px; padding:3px 7px; }
   .exam-section-head .week-title{ font-size:16px; }
+
+  /* 시작 팝업(스플래시)을 휴대폰에서 훨씬 크고 확실하게 표시 */
+  .splash-card{
+    max-width:560px; width:100%;
+    border:none; box-shadow:none; background:transparent;
+    padding:12px 12px 36px;
+  }
+  .splash-year{ width:112px; height:112px; font-size:22px; margin-bottom:30px; }
+  .splash-title{ gap:10px; margin-bottom:26px; }
+  .splash-title-sm{ font-size:20px; }
+  .splash-title-lg{ font-size:52px; }
+  .splash-sub{ font-size:19px; margin-bottom:40px; }
+  .splash-btn{ width:100%; padding:20px 30px; font-size:19px; }
 }
