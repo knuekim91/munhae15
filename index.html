@@ -43,7 +43,10 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <span>전체 학습 지도</span>
-      <button id="closeSidebarBtn" class="icon-btn mobile-only" aria-label="닫기">✕</button>
+      <div class="sidebar-header-actions">
+        <button id="adminSettingsBtn" class="icon-btn" aria-label="관리자 설정" title="관리자 설정">⚙️</button>
+        <button id="closeSidebarBtn" class="icon-btn mobile-only" aria-label="닫기">✕</button>
+      </div>
     </div>
     <nav id="sidebarNav" class="sidebar-nav"></nav>
   </aside>
@@ -88,6 +91,7 @@
 <script src="data/content/w32.js"></script>
 <script src="js/splash.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/scoreboard.js"></script>
 <script src="js/winners.js"></script>

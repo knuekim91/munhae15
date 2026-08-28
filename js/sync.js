@@ -24,6 +24,19 @@ function sendToSheet(payload){
     .catch(() => queuePending(payload));
 }
 
+/** 응답이 필요한 요청(로그인·비밀번호·관리자 기능)용. 연동 안 됐거나 실패하면 null. */
+async function postToSheet(payload){
+  const url = endpointUrl();
+  if(!url) return null;
+  try{
+    const res = await fetch(url, { method: "POST", body: JSON.stringify(payload) });
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){
+    return null;
+  }
+}
+
 function flushPending(){
   const url = endpointUrl();
   if(!url) return;

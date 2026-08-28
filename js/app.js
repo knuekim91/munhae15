@@ -567,6 +567,7 @@ function renderQuizItem(item, num, state){
 /* ---------------- init ---------------- */
 function init(){
   initTheme();
+  initAdminSettings();
   document.getElementById("winnersBtn").addEventListener("click", openWinnersModal);
   if(!sessionStorage.getItem("moonhae15_splash_shown")){
     renderSplash(() => {
