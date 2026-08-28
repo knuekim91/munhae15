@@ -14,6 +14,7 @@ function renderSplash(onDone){
       </div>
       <div class="splash-sub">명품 경북여상 문해력 앱</div>
       <button class="btn btn-primary splash-btn" id="splashStartBtn">시작하기</button>
+      <div class="splash-credit">Since 2026.08.29 · 제작 및 배포 : daphne</div>
     </div>`;
   document.body.appendChild(wrap);
 
