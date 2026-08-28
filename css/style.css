@@ -385,23 +385,27 @@ a{ color:inherit; }
     #f97bb0 60%, #a17bf0 78%, #5b6cf9 100%);
   background-size:260% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent;
-  animation:titleShine 4s ease-in-out infinite;
+  animation:titleShine 6s ease-in-out infinite;
 }
+/* 0~42%는 글자가 켜지는 동안 정지, 42~70% 구간에서 샤인이 훑고 지나감 */
 @keyframes titleShine{
-  0%, 100%{ background-position:220% 0; }
-  50%{ background-position:-120% 0; }
+  0%, 42%, 100%{ background-position:220% 0; }
+  70%{ background-position:-120% 0; }
 }
 .title-char{
   display:inline-block;
-  animation:titleCharPop 2.4s ease-in-out infinite;
+  animation:titleCharPop 6s ease-in-out infinite;
 }
 .title-char:nth-child(1){ animation-delay:0s; }
-.title-char:nth-child(2){ animation-delay:.18s; }
-.title-char:nth-child(3){ animation-delay:.36s; }
-.title-char:nth-child(4){ animation-delay:.54s; }
+.title-char:nth-child(2){ animation-delay:.25s; }
+.title-char:nth-child(3){ animation-delay:.5s; }
+.title-char:nth-child(4){ animation-delay:.75s; }
+/* 모두 꺼진 상태 → 순서대로 반짝 켜짐 → 잠깐 유지 → 다시 꺼짐(반복) */
 @keyframes titleCharPop{
-  0%, 70%, 100%{ filter:brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); }
-  15%{ filter:brightness(1.9) drop-shadow(0 0 10px rgba(255,255,255,.7)); }
+  0%{ opacity:0; filter:brightness(.4) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  6%{ opacity:1; filter:brightness(2) drop-shadow(0 0 14px rgba(255,255,255,.85)); }
+  16%, 82%{ opacity:1; filter:brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  92%, 100%{ opacity:0; filter:brightness(.4) drop-shadow(0 0 0 rgba(255,255,255,0)); }
 }
 .splash-sub{ font-size:15px; font-weight:700; color:var(--text-faint); margin-bottom:26px; }
 .splash-btn{
