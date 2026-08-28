@@ -486,7 +486,7 @@ body.pre-login .streak-chip{ display:none; }
 @media (max-width: 880px){
   .app-shell{ grid-template-columns: 1fr; grid-template-areas: "top" "main"; }
   .sidebar{
-    position:fixed; top:0; left:0; height:100vh; width:min(84vw, 320px);
+    position:fixed; top:0; left:0; height:100vh; width:min(88vw, 340px);
     transform:translateX(-105%); transition:transform .25s ease; z-index:30;
     box-shadow:var(--shadow);
   }
@@ -499,4 +499,12 @@ body.pre-login .streak-chip{ display:none; }
   .confusable-grid{ grid-template-columns:1fr; }
   .confusable-vs{ display:none; }
   .page-title{ font-size:22px; }
+
+  /* 사이드바 메뉴 글씨를 휴대폰에서도 읽기 편하게 확대 */
+  .week-title{ font-size:15.5px; }
+  .week-meta{ font-size:12.5px; }
+  .week-badge{ width:30px; height:30px; font-size:13px; }
+  .day-item{ font-size:14.5px; padding:11px 10px 11px 14px; }
+  .day-tag{ font-size:11px; padding:3px 7px; }
+  .exam-section-head .week-title{ font-size:16px; }
 }
