@@ -134,7 +134,7 @@ a{ color:inherit; }
 .progress-fill{ height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#8f7bff); transition:width .5s ease; }
 .progress-label{ font-size:12.5px; color:var(--text-dim); white-space:nowrap; font-weight:600; }
 
-.topbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+.topbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; min-width:0; }
 .streak-chip{ display:flex; align-items:center; gap:5px; background:var(--bg-soft); padding:6px 12px; border-radius:99px; font-weight:700; font-size:13.5px; }
 .streak-flame{ font-size:15px; }
 
@@ -417,6 +417,7 @@ body.pre-login .streak-chip{ display:none; }
   position:relative; display:flex; align-items:center; gap:6px;
   background:var(--bg-soft); border-radius:99px; padding:5px 12px 5px 6px;
   font-size:13px; font-weight:700;
+  min-width:0;
 }
 .score-icon-btn{
   display:flex; align-items:center; justify-content:center;
@@ -425,6 +426,7 @@ body.pre-login .streak-chip{ display:none; }
 }
 .score-icon-btn:hover{ background:var(--border); }
 .profile-avatar, .profile-label{ cursor:pointer; }
+.profile-label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70px; min-width:0; }
 .profile-avatar{
   width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
   display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800; flex:none;
@@ -499,7 +501,7 @@ body.pre-login .streak-chip{ display:none; }
   .content{ padding:20px 16px 70px; }
   .topbar{ padding:0 12px; gap:10px; }
   .topbar-progress{ display:none; }
-  .brand-text{ display:none; }
+  .brand{ display:none; }
   .confusable-grid{ grid-template-columns:1fr; }
   .confusable-vs{ display:none; }
   .page-title{ font-size:22px; }
