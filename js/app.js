@@ -222,21 +222,32 @@ function router(){
 
   const data = (typeof DAY_CONTENT !== "undefined") ? DAY_CONTENT[id] : null;
 
-  renderCrumb(content, day);
-
   if(data && dailyLimitBlocks(id)){
+    renderCrumb(content, day);
     renderDailyLimitNotice(content, day);
   } else if(!data){
+    renderCrumb(content, day);
     renderPlaceholder(content, day);
-  } else if(day.type === "learn"){
-    renderLearnDay(content, day, data);
-  } else if(day.type === "practice"){
-    renderPracticeDay(content, day, data);
-  } else if(day.type === "review"){
-    renderQuizDay(content, day, data, "이번 주 복습 완료!");
+  } else {
+    renderWorksheetTip(content);
+    renderCrumb(content, day);
+    if(day.type === "learn"){
+      renderLearnDay(content, day, data);
+    } else if(day.type === "practice"){
+      renderPracticeDay(content, day, data);
+    } else if(day.type === "review"){
+      renderQuizDay(content, day, data, "이번 주 복습 완료!");
+    }
   }
 
   renderSidebar();
+}
+
+function renderWorksheetTip(content){
+  const tip = document.createElement("div");
+  tip.className = "worksheet-tip";
+  tip.innerHTML = `📎 <span>이 화면과 선생님이 나눠주신 <b>학습지</b>를 나란히 펴 두고 함께 풀어보세요! 눈으로 읽고 손으로 쓰면 두 배 더 오래 기억나요 ✍️💫</span>`;
+  content.appendChild(tip);
 }
 
 function renderCrumb(content, day){
@@ -281,12 +292,14 @@ function renderLearnDay(content, day, data){
   sub.textContent = data.intro || "";
   content.appendChild(sub);
 
+  const checkpointTracker = { total: 0, done: new Set() };
   let checkpointCursor = 0;
   data.words.forEach((w, i) => {
     content.appendChild(renderWordCard(w, i+1));
     // 단어 2개마다 확인 문제 삽입 (원본 교재 방식)
     if((i+1) % 2 === 0 && data.checkpoints && data.checkpoints[checkpointCursor]){
-      content.appendChild(renderCheckpoint(data.checkpoints[checkpointCursor], checkpointCursor+1));
+      checkpointTracker.total++;
+      content.appendChild(renderCheckpoint(data.checkpoints[checkpointCursor], checkpointCursor+1, checkpointTracker));
       checkpointCursor++;
     }
   });
@@ -302,6 +315,10 @@ function renderLearnDay(content, day, data){
   const done = PROGRESS.completed[day.id];
   btn.textContent = done ? "✓ 학습 완료됨" : "오늘 어휘 학습 완료";
   btn.addEventListener("click", () => {
+    if(!done && checkpointTracker.done.size < checkpointTracker.total){
+      toast("잠깐! 위에 숨어있는 Q1~Q" + checkpointTracker.total + " 확인 문제부터 살짝 풀고 와주세요 🕵️‍♀️✨");
+      return;
+    }
     if(!markComplete(day.id)) return;
     btn.textContent = "✓ 학습 완료됨";
     toast("잘했어요! 내일은 확인 문제로 복습해요 🙌");
@@ -356,7 +373,7 @@ function renderConfusable(c){
   return card;
 }
 
-function renderCheckpoint(cp, num){
+function renderCheckpoint(cp, num, tracker){
   const card = document.createElement("div");
   card.className = "card checkpoint";
   const label = document.createElement("div");
@@ -367,6 +384,8 @@ function renderCheckpoint(cp, num){
   const sentenceEl = document.createElement("div");
   sentenceEl.className = "blank-sentence";
   const parts = cp.text.split("__BLANK__");
+  const blankCount = parts.length - 1;
+  const answeredBlanks = new Set();
   parts.forEach((part, i) => {
     sentenceEl.appendChild(document.createTextNode(part));
     if(i < parts.length - 1){
@@ -381,6 +400,8 @@ function renderCheckpoint(cp, num){
           [...group.children].forEach(c => c.classList.remove("selected","correct","incorrect"));
           if(oi === correctIdx){ b.classList.add("correct"); }
           else{ b.classList.add("incorrect"); group.children[correctIdx].classList.add("correct"); }
+          answeredBlanks.add(i);
+          if(tracker && answeredBlanks.size >= blankCount) tracker.done.add(num);
         });
         group.appendChild(b);
       });
