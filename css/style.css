@@ -379,27 +379,31 @@ a{ color:inherit; }
 .splash-title-sm{ font-size:16px; font-weight:700; color:var(--text-dim); }
 .splash-title-lg{
   font-size:34px; font-weight:900; letter-spacing:-.01em;
+}
+/* 그라데이션·글자클립은 각 글자(.title-char)에 직접 줘야 실제로 보인다 —
+   부모에만 주면 부모 자신은 직접 텍스트가 없어 클립할 글자가 없어서
+   아무것도 안 보이는 버그가 생김. */
+.title-char{
+  display:inline-block;
   background:linear-gradient(100deg,
     #5b6cf9 0%, #a17bf0 22%, #f97bb0 40%,
     #fff 48%, #fff 52%,
     #f97bb0 60%, #a17bf0 78%, #5b6cf9 100%);
   background-size:260% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent;
-  animation:titleShine 6s ease-in-out infinite;
+  animation: titleCharPop 6s ease-in-out infinite, titleShine 6s ease-in-out infinite;
 }
+/* 첫 번째 값은 titleCharPop(순서대로 켜지는 딜레이), 두 번째 값은
+   titleShine(전 글자가 같은 타이밍에 훑이도록 항상 0s)에 대응 */
+.title-char:nth-child(1){ animation-delay:0s, 0s; }
+.title-char:nth-child(2){ animation-delay:.25s, 0s; }
+.title-char:nth-child(3){ animation-delay:.5s, 0s; }
+.title-char:nth-child(4){ animation-delay:.75s, 0s; }
 /* 0~42%는 글자가 켜지는 동안 정지, 42~70% 구간에서 샤인이 훑고 지나감 */
 @keyframes titleShine{
   0%, 42%, 100%{ background-position:220% 0; }
   70%{ background-position:-120% 0; }
 }
-.title-char{
-  display:inline-block;
-  animation:titleCharPop 6s ease-in-out infinite;
-}
-.title-char:nth-child(1){ animation-delay:0s; }
-.title-char:nth-child(2){ animation-delay:.25s; }
-.title-char:nth-child(3){ animation-delay:.5s; }
-.title-char:nth-child(4){ animation-delay:.75s; }
 /* 모두 꺼진 상태 → 순서대로 반짝 켜짐 → 잠깐 유지 → 다시 꺼짐(반복) */
 @keyframes titleCharPop{
   0%{ opacity:0; filter:brightness(.4) drop-shadow(0 0 0 rgba(255,255,255,0)); }
