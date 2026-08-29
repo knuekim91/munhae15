@@ -137,6 +137,27 @@ a{ color:inherit; }
 .topbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; min-width:0; }
 .streak-chip{ display:flex; align-items:center; gap:5px; background:var(--bg-soft); padding:6px 12px; border-radius:99px; font-weight:700; font-size:13.5px; }
 .streak-flame{ font-size:15px; }
+.mileage-chip{
+  display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:99px;
+  font-weight:800; font-size:13.5px; color:#8a6300;
+  background:linear-gradient(120deg,#ffe9a8,#ffd76a);
+}
+.mileage-coin{ font-size:15px; }
+
+/* 깜짝 보너스 마일리지 팝업 */
+.bonus-mileage-popup{
+  position:fixed; top:50%; left:50%; z-index:120;
+  transform:translate(-50%,-50%) scale(.6); opacity:0;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+  background:linear-gradient(135deg,var(--accent),#a17bf0 55%,#f97bb0);
+  color:#fff; border-radius:var(--radius-lg); box-shadow:var(--shadow);
+  padding:28px 40px; text-align:center; pointer-events:none;
+}
+.bonus-mileage-popup.show{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+.bonus-mileage-emoji{ font-size:34px; margin-bottom:6px; }
+.bonus-mileage-text{ font-size:14px; font-weight:700; opacity:.9; margin-bottom:4px; }
+.bonus-mileage-amount{ font-size:32px; font-weight:900; }
+.bonus-mileage-amount span{ font-size:18px; margin-left:2px; }
 
 /* ---------- sidebar ---------- */
 .sidebar-header{
@@ -423,7 +444,8 @@ a{ color:inherit; }
 body.pre-login .sidebar,
 body.pre-login #menuBtn,
 body.pre-login .topbar-progress,
-body.pre-login .streak-chip{ display:none; }
+body.pre-login .streak-chip,
+body.pre-login .mileage-chip{ display:none; }
 
 .login-wrap{ display:flex; justify-content:center; padding-top:6vh; }
 .login-card{

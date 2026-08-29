@@ -37,18 +37,40 @@ function progressKey(){
 }
 function loadProgress(){
   const key = progressKey();
-  if(!key) return { completed:{}, scores:{}, streak:0, lastDate:null };
+  if(!key) return { completed:{}, scores:{}, streak:0, lastDate:null, mileage:0 };
   try{
-    return JSON.parse(localStorage.getItem(key)) || { completed:{}, scores:{}, streak:0, lastDate:null };
+    return JSON.parse(localStorage.getItem(key)) || { completed:{}, scores:{}, streak:0, lastDate:null, mileage:0 };
   }catch(e){
-    return { completed:{}, scores:{}, streak:0, lastDate:null };
+    return { completed:{}, scores:{}, streak:0, lastDate:null, mileage:0 };
   }
 }
 function saveProgress(p){
   const key = progressKey();
   if(key) localStorage.setItem(key, JSON.stringify(p));
 }
-let PROGRESS = { completed:{}, scores:{}, streak:0, lastDate:null };
+let PROGRESS = { completed:{}, scores:{}, streak:0, lastDate:null, mileage:0 };
+
+/* ---------------- 학습 마일리지 ---------------- */
+const MILEAGE_BASE = 10;          // 회차 완료 기본 적립
+const MILEAGE_PERFECT_BONUS = 5;  // 확인·복습 100점 보너스
+const MILEAGE_BONUS_CHANCE = .18; // 깜짝 보너스 등장 확률(너무 잦지도 짜지도 않게)
+const MILEAGE_BONUS_MIN = 15;
+const MILEAGE_BONUS_MAX = 30;
+
+function showBonusMileage(amount){
+  const el = document.createElement("div");
+  el.className = "bonus-mileage-popup";
+  el.innerHTML = `
+    <div class="bonus-mileage-emoji">🎉</div>
+    <div class="bonus-mileage-text">깜짝 보너스 마일리지!</div>
+    <div class="bonus-mileage-amount">+${amount}<span>P</span></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 400);
+  }, 2600);
+}
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
@@ -71,6 +93,8 @@ function markComplete(dayId, score){
   if(score !== undefined) PROGRESS.scores[dayId] = score;
   PROGRESS.completed[dayId] = true;
 
+  let mileageEarned = 0;
+  let bonusMileage = 0;
   if(!already){
     if(PROGRESS.lastDate !== today){
       const yest = new Date(Date.now() - 864e5).toISOString().slice(0,10);
@@ -78,11 +102,19 @@ function markComplete(dayId, score){
     }
     PROGRESS.lastDate = today;
     PROGRESS.lastCompletedId = dayId;
+
+    mileageEarned = MILEAGE_BASE + (score === 100 ? MILEAGE_PERFECT_BONUS : 0);
+    if(Math.random() < MILEAGE_BONUS_CHANCE){
+      bonusMileage = Math.floor(MILEAGE_BONUS_MIN + Math.random() * (MILEAGE_BONUS_MAX - MILEAGE_BONUS_MIN + 1));
+      mileageEarned += bonusMileage;
+    }
+    PROGRESS.mileage = (PROGRESS.mileage || 0) + mileageEarned;
   }
   saveProgress(PROGRESS);
   renderSidebar();
   updateHeader();
-  logActivity(findDay(dayId), score);
+  logActivity(findDay(dayId), score, mileageEarned || undefined);
+  if(bonusMileage > 0) showBonusMileage(bonusMileage);
   return true;
 }
 
@@ -121,6 +153,8 @@ function updateHeader(){
   document.getElementById("globalProgressBar").style.width = pct + "%";
   document.getElementById("globalProgressLabel").textContent = `${done} / ${total}일`;
   document.getElementById("streakCount").textContent = PROGRESS.streak || 0;
+  const mileageEl = document.getElementById("mileageCount");
+  if(mileageEl) mileageEl.textContent = PROGRESS.mileage || 0;
 }
 
 /* ---------------- theme ---------------- */

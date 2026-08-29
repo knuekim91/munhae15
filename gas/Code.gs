@@ -5,7 +5,7 @@
  */
 
 var SHEET_NAME = "기록";
-var HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름", "주차", "일자ID", "영역", "주제", "유형", "점수"];
+var HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름", "주차", "일자ID", "영역", "주제", "유형", "점수", "마일리지"];
 
 var WINNER_SHEET_NAME = "행운의7명";
 var WINNER_HEADER = ["추첨일", "학번코드", "학년", "반", "번호", "이름"];
@@ -71,7 +71,8 @@ function getHistory_(studentId) {
       unit: row[8],
       topic: row[9],
       type: row[10],
-      score: Number(score)
+      score: Number(score),
+      mileage: (row[12] === "" || row[12] === undefined) ? null : Number(row[12])
     });
   }
   records.sort(function (a, b) { return new Date(a.timestamp) - new Date(b.timestamp); });
@@ -107,7 +108,8 @@ function appendRow_(data) {
     data.unit || "",
     data.topic || "",
     typeLabel_(data.type),
-    data.score === "" || data.score === undefined ? "" : data.score
+    data.score === "" || data.score === undefined ? "" : data.score,
+    data.mileage === "" || data.mileage === undefined ? "" : data.mileage
   ]);
 }
 
@@ -417,6 +419,8 @@ function handleAdminStatus_(data) {
     accountMap[String(accountValues[i][0])] = { set: !!accountValues[i][2], lastLogin: accountValues[i][3] };
   }
 
+  var mileageMap = getMileageTotals_();
+
   var list = [];
   for (var r = 1; r < rosterValues.length; r++) {
     var row = rosterValues[r];
@@ -425,7 +429,21 @@ function handleAdminStatus_(data) {
     if (data.cls && String(cls) !== String(data.cls)) continue;
     var id = studentId_(grade, cls, number);
     var acc = accountMap[id] || { set: false, lastLogin: "" };
-    list.push({ grade: grade, cls: cls, number: number, name: name, passwordSet: acc.set, lastLogin: acc.lastLogin });
+    list.push({ grade: grade, cls: cls, number: number, name: name, passwordSet: acc.set, lastLogin: acc.lastLogin, mileage: mileageMap[id] || 0 });
   }
   return { status: "ok", list: list };
+}
+
+/** 학번코드별 누적 마일리지 합계 (기록 시트 "마일리지" 열 기준) */
+function getMileageTotals_() {
+  var values = getSheet_().getDataRange().getValues();
+  var totals = {};
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var m = Number(row[12]);
+    if (!m) continue;
+    var sid = String(row[1]);
+    totals[sid] = (totals[sid] || 0) + m;
+  }
+  return totals;
 }

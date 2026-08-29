@@ -100,7 +100,7 @@ async function fetchLatestWinners(){
   }
 }
 
-function logActivity(day, score){
+function logActivity(day, score, mileage){
   const student = getStudent();
   if(!student || !day) return;
   sendToSheet({
@@ -116,5 +116,6 @@ function logActivity(day, score){
     topic: day.topic,
     type: day.type,
     score: (score === undefined ? "" : score),
+    mileage: (mileage === undefined ? "" : mileage),
   });
 }

@@ -86,10 +86,13 @@ function renderAdminPanel(adminPassword, list){
   const overlay = document.getElementById("adminModalOverlay");
   if(!overlay) return;
 
-  const rows = list.map(s => `
+  const sorted = list.slice().sort((a, b) => (b.mileage || 0) - (a.mileage || 0));
+
+  const rows = sorted.map(s => `
     <tr>
       <td>${s.grade}-${s.cls}-${s.number}</td>
       <td>${s.name || ""}</td>
+      <td>🪙 ${s.mileage || 0}</td>
       <td>${s.passwordSet ? "✅ 설정함" : "⚪ 기본값(2026)"}</td>
       <td><button class="btn btn-ghost admin-reset-btn" data-grade="${s.grade}" data-cls="${s.cls}" data-number="${s.number}">초기화</button></td>
     </tr>`).join("");
@@ -97,17 +100,17 @@ function renderAdminPanel(adminPassword, list){
   overlay.innerHTML = `
     <div class="modal-panel admin-modal">
       <div class="modal-head">
-        <div class="modal-title">⚙️ 학생 비밀번호 초기화</div>
+        <div class="modal-title">⚙️ 학생 관리</div>
         <button class="icon-btn" id="closeAdminModalBtn">✕</button>
       </div>
       <p class="login-sub" style="margin-bottom:12px;">
-        학생이 비밀번호를 잊었으면 초기화하세요. 다음 로그인부터 기본 비밀번호(2026)로
-        들어와서 새 비밀번호를 다시 설정하게 됩니다.
+        마일리지 순으로 정렬되어 있어요. 학생이 비밀번호를 잊었으면 초기화하세요.
+        다음 로그인부터 기본 비밀번호(2026)로 들어와서 새 비밀번호를 다시 설정하게 됩니다.
       </p>
       <div class="score-table-wrap admin-table-wrap">
         <table class="score-table">
-          <thead><tr><th>학번</th><th>이름</th><th>비밀번호</th><th></th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="4">명렬에 등록된 학생이 없어요.</td></tr>`}</tbody>
+          <thead><tr><th>학번</th><th>이름</th><th>마일리지</th><th>비밀번호</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="5">명렬에 등록된 학생이 없어요.</td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
