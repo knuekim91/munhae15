@@ -265,8 +265,7 @@ var ROSTER_HEADER = ["학년", "반", "번호", "이름"];
 var ACCOUNT_SHEET_NAME = "계정";
 var ACCOUNT_HEADER = ["학번코드", "비밀번호해시", "비밀번호설정됨", "최근로그인"];
 var DEFAULT_PASSWORD = "2026";
-var TEACHER_SHEET_NAME = "담임배정";
-var TEACHER_HEADER = ["학년", "반", "담임명"];
+var TEACHER_ROSTER_SHEET_NAME = "교사";
 
 function studentId_(grade, cls, number) {
   return String(grade) + String(cls) + ("0" + String(number)).slice(-2);
@@ -313,49 +312,38 @@ function getAccountSheet_() {
   return sheet;
 }
 
-/** "담임배정" 시트: 없으면 만들고, 명렬에 있는 학년·반 조합을 담임명 빈 칸으로 채워 넣는다. */
-function getTeacherSheet_() {
+/** "교사" 시트(이름, 부서/학년, 직책, 구분, 담임학급): 없으면 null. 수동으로 관리하는 시트. */
+function getTeacherRosterSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(TEACHER_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(TEACHER_SHEET_NAME);
-    sheet.appendRow(TEACHER_HEADER);
-    sheet.setFrozenRows(1);
-    seedTeacherSheet_(sheet);
-  }
-  return sheet;
+  return ss.getSheetByName(TEACHER_ROSTER_SHEET_NAME);
 }
 
-function seedTeacherSheet_(sheet) {
-  var rosterValues = getRosterSheet_().getDataRange().getValues();
-  var seen = {};
-  var pairs = [];
-  for (var i = 1; i < rosterValues.length; i++) {
-    var grade = rosterValues[i][0], cls = rosterValues[i][1];
-    if (grade === "" || cls === "") continue;
-    var key = grade + "-" + cls;
-    if (seen[key]) continue;
-    seen[key] = true;
-    pairs.push([grade, cls, ""]);
-  }
-  pairs.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
-  pairs.forEach(function (p) { sheet.appendRow(p); });
+/** "2-1" 형식의 담임학급 문자열을 {grade, cls}로 분해한다. 형식이 아니면 null. */
+function parseHomeroomClass_(value) {
+  var m = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(String(value == null ? "" : value));
+  if (!m) return null;
+  return { grade: Number(m[1]), cls: Number(m[2]) };
 }
 
 /**
- * 담임명이 채워진 학급 목록을 반환한다(관리자 비밀번호로 인증, 관리자 설정 화면의
- * "학급 선택" 드롭다운용). "담임배정" 시트에서 담임명 칸을 채워야 목록에 나타난다.
+ * 담임학급이 채워진 선생님 목록을 반환한다(관리자 비밀번호로 인증, 관리자 설정 화면의
+ * "학급 선택" 드롭다운용). "교사" 시트의 "담임학급(예: 2-1)" 칸을 채워야 목록에 나타난다.
  */
 function handleAdminTeachers_(data) {
   if (!checkAdminPassword_(data.adminPassword)) {
     return { status: "error", reason: "admin_auth" };
   }
-  var values = getTeacherSheet_().getDataRange().getValues();
+  var sheet = getTeacherRosterSheet_();
+  if (!sheet) return { status: "ok", list: [] };
+
+  var values = sheet.getDataRange().getValues();
   var list = [];
   for (var i = 1; i < values.length; i++) {
     var row = values[i];
-    if (!row[2]) continue;
-    list.push({ grade: row[0], cls: row[1], teacher: row[2] });
+    var name = row[0];
+    var homeroom = parseHomeroomClass_(row[4]);
+    if (!name || !homeroom) continue;
+    list.push({ grade: homeroom.grade, cls: homeroom.cls, teacher: name });
   }
   return { status: "ok", list: list };
 }

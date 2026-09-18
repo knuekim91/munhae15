@@ -101,7 +101,7 @@ function renderClassPicker(adminPassword, teacherList){
       </div>
       <p class="login-sub" style="margin-bottom:16px;">
         본인 학급을 선택하면 그 반 학생만 볼 수 있어요.
-        목록에 없다면 시트의 "담임배정" 탭에 담임명을 먼저 채워 넣어야 해요.
+        목록에 없다면 시트의 "교사" 탭에 담임학급(예: 2-1)을 먼저 채워 넣어야 해요.
       </p>
       <label class="login-field login-name">
         <span>학급</span>
