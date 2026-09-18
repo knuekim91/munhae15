@@ -22,6 +22,7 @@ function doPost(e) {
       case "setPassword": result = handleSetPassword_(data); break;
       case "adminStatus": result = handleAdminStatus_(data); break;
       case "adminReset": result = handleAdminReset_(data); break;
+      case "adminTeachers": result = handleAdminTeachers_(data); break;
       default:
         appendRow_(data);
         result = { status: "ok" };
@@ -264,6 +265,8 @@ var ROSTER_HEADER = ["학년", "반", "번호", "이름"];
 var ACCOUNT_SHEET_NAME = "계정";
 var ACCOUNT_HEADER = ["학번코드", "비밀번호해시", "비밀번호설정됨", "최근로그인"];
 var DEFAULT_PASSWORD = "2026";
+var TEACHER_SHEET_NAME = "담임배정";
+var TEACHER_HEADER = ["학년", "반", "담임명"];
 
 function studentId_(grade, cls, number) {
   return String(grade) + String(cls) + ("0" + String(number)).slice(-2);
@@ -308,6 +311,53 @@ function getAccountSheet_() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+/** "담임배정" 시트: 없으면 만들고, 명렬에 있는 학년·반 조합을 담임명 빈 칸으로 채워 넣는다. */
+function getTeacherSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(TEACHER_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(TEACHER_SHEET_NAME);
+    sheet.appendRow(TEACHER_HEADER);
+    sheet.setFrozenRows(1);
+    seedTeacherSheet_(sheet);
+  }
+  return sheet;
+}
+
+function seedTeacherSheet_(sheet) {
+  var rosterValues = getRosterSheet_().getDataRange().getValues();
+  var seen = {};
+  var pairs = [];
+  for (var i = 1; i < rosterValues.length; i++) {
+    var grade = rosterValues[i][0], cls = rosterValues[i][1];
+    if (grade === "" || cls === "") continue;
+    var key = grade + "-" + cls;
+    if (seen[key]) continue;
+    seen[key] = true;
+    pairs.push([grade, cls, ""]);
+  }
+  pairs.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+  pairs.forEach(function (p) { sheet.appendRow(p); });
+}
+
+/**
+ * 담임명이 채워진 학급 목록을 반환한다(관리자 비밀번호로 인증, 관리자 설정 화면의
+ * "학급 선택" 드롭다운용). "담임배정" 시트에서 담임명 칸을 채워야 목록에 나타난다.
+ */
+function handleAdminTeachers_(data) {
+  if (!checkAdminPassword_(data.adminPassword)) {
+    return { status: "error", reason: "admin_auth" };
+  }
+  var values = getTeacherSheet_().getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    if (!row[2]) continue;
+    list.push({ grade: row[0], cls: row[1], teacher: row[2] });
+  }
+  return { status: "ok", list: list };
 }
 
 /** 명렬에서 학년+반+번호로 이름을 찾는다. 명렬에 없으면 null. */
@@ -420,6 +470,8 @@ function handleAdminStatus_(data) {
   }
 
   var mileageMap = getMileageTotals_();
+  var completedMap = getCompletedDayCounts_();
+  var totalDays = getSchoolwideDayCount_();
 
   var list = [];
   for (var r = 1; r < rosterValues.length; r++) {
@@ -429,7 +481,16 @@ function handleAdminStatus_(data) {
     if (data.cls && String(cls) !== String(data.cls)) continue;
     var id = studentId_(grade, cls, number);
     var acc = accountMap[id] || { set: false, lastLogin: "" };
-    list.push({ grade: grade, cls: cls, number: number, name: name, passwordSet: acc.set, lastLogin: acc.lastLogin, mileage: mileageMap[id] || 0 });
+    var completedDays = completedMap[id] || 0;
+    list.push({
+      grade: grade, cls: cls, number: number, name: name,
+      passwordSet: acc.set,
+      lastLogin: acc.lastLogin,
+      mileage: mileageMap[id] || 0,
+      completedDays: completedDays,
+      totalDays: totalDays,
+      progressRate: totalDays ? Math.round((completedDays / totalDays) * 100) : 0
+    });
   }
   return { status: "ok", list: list };
 }
@@ -446,4 +507,38 @@ function getMileageTotals_() {
     totals[sid] = (totals[sid] || 0) + m;
   }
   return totals;
+}
+
+/**
+ * 진도율 계산용 헬퍼. "완료"는 해당 일자ID에 점수가 기록된 것으로 본다.
+ * 분모(totalDays)는 학교 전체에서 지금까지 등장한 고유 일자ID 개수로,
+ * 커리큘럼 중 실제로 진행된 지점을 자동으로 따라간다.
+ */
+function getCompletedDayCounts_() {
+  var values = getSheet_().getDataRange().getValues();
+  var perStudent = {};
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var score = row[11];
+    if (score === "" || score === null || isNaN(Number(score))) continue;
+    var sid = String(row[1]);
+    if (!perStudent[sid]) perStudent[sid] = {};
+    perStudent[sid][row[7]] = true;
+  }
+  var counts = {};
+  for (var sid2 in perStudent) counts[sid2] = Object.keys(perStudent[sid2]).length;
+  return counts;
+}
+
+/** 점수가 기록된 고유 일자ID 개수(학교 전체 기준). */
+function getSchoolwideDayCount_() {
+  var values = getSheet_().getDataRange().getValues();
+  var seen = {};
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var score = row[11];
+    if (score === "" || score === null || isNaN(Number(score))) continue;
+    seen[row[7]] = true;
+  }
+  return Object.keys(seen).length;
 }
