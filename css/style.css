@@ -462,6 +462,7 @@ body.pre-login .mileage-chip{ display:none; }
 .login-title{ font-size:22px; font-weight:900; margin:0 0 6px; }
 .login-sub{ font-size:13.5px; color:var(--text-dim); margin:0 0 22px; line-height:1.6; }
 .login-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
+.login-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
 .login-field{ display:flex; flex-direction:column; gap:6px; text-align:left; }
 .login-field span{ font-size:12px; font-weight:700; color:var(--text-faint); }
 .login-field input{
