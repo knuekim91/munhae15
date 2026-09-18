@@ -7,4 +7,6 @@
 const APP_CONFIG = {
   SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbw2lsKm-Y5cWRESe3w7IgtkEjCron6cqlz-AEauVeXCiVsGuRZKGgW8RPRppdU7_eRf/exec",
   SCHOOL_NAME: "명품 경북여상 문해력 15분",
+  // 1~32주차 학습지를 한 파일로 합친 인쇄용 PDF. 비워두면(="") 사이드바에 링크가 안 나타남.
+  WORKSHEETS_PDF_URL: "worksheets/전체_학습지_모음(1-32주차).pdf",
 };

@@ -176,6 +176,25 @@ function renderSidebar(){
   nav.innerHTML = "";
   const currentId = location.hash.replace("#","") || "";
 
+  if(typeof APP_CONFIG !== "undefined" && APP_CONFIG.WORKSHEETS_PDF_URL){
+    const resourceGroup = document.createElement("div");
+    resourceGroup.className = "week-group exam-group open";
+
+    const resourceList = document.createElement("div");
+    resourceList.className = "week-days";
+    const resourceLink = document.createElement("a");
+    resourceLink.className = "day-item exam-file-item";
+    resourceLink.href = encodeURI(APP_CONFIG.WORKSHEETS_PDF_URL);
+    resourceLink.target = "_blank";
+    resourceLink.rel = "noopener";
+    resourceLink.innerHTML = `
+      <span class="day-type-icon">📁</span>
+      <span class="day-label">전체 학습지 (PDF)</span>`;
+    resourceList.appendChild(resourceLink);
+    resourceGroup.appendChild(resourceList);
+    nav.appendChild(resourceGroup);
+  }
+
   if(typeof EXAM_LIST !== "undefined" && EXAM_LIST.length){
     const examGroup = document.createElement("div");
     examGroup.className = "week-group exam-group open";
