@@ -178,12 +178,12 @@ function renderSidebar(){
 
   if(typeof APP_CONFIG !== "undefined" && APP_CONFIG.WORKSHEETS_PDF_URL){
     const resourceGroup = document.createElement("div");
-    resourceGroup.className = "week-group exam-group open";
+    resourceGroup.className = "week-group resource-group open";
 
     const resourceList = document.createElement("div");
     resourceList.className = "week-days";
     const resourceLink = document.createElement("a");
-    resourceLink.className = "day-item exam-file-item";
+    resourceLink.className = "day-item resource-file-item";
     resourceLink.href = encodeURI(APP_CONFIG.WORKSHEETS_PDF_URL);
     resourceLink.target = "_blank";
     resourceLink.rel = "noopener";

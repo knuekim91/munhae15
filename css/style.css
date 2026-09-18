@@ -211,6 +211,11 @@ a{ color:inherit; }
 .exam-file-item{ text-decoration:none; }
 .exam-file-item:hover{ background:none; }
 
+/* 전체 학습지 PDF 링크: 정기고사와 달리 실제로 눌러서 여는 링크이므로
+   흐리게 표시하지 않고, 정기고사 목록과는 얇은 구분선으로만 분리 */
+.resource-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.resource-file-item{ text-decoration:none; font-weight:600; }
+
 .day-dot{
   width:18px; height:18px; border-radius:50%; flex:none;
   border:2px solid var(--text-faint);
