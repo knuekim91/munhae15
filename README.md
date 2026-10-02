@@ -147,18 +147,20 @@ gas/Code.gs               구글 시트 쪽에 붙여넣는 Apps Script 코드
 ## 카카오톡 일일 접속 보고
 
 학생이 로그인할 때마다 "접속로그" 시트에 기록이 쌓입니다. `?dailySummary=1` 파라미터로
-이 웹앱에 GET 요청을 보내면 그 시점까지의 접속 현황(순 접속 학생 수, 총 로그인 횟수)을
-JSON으로 돌려줍니다.
+이 웹앱에 GET 요청을 보내면 그 시점까지의 접속 현황을 JSON으로 돌려줍니다.
+`byGrade`는 그날 학년별 순 접속 학생 수, `cumulativeUniqueCount`는 서비스 시작 이후
+한 번이라도 접속한 전체 누적 학생 수입니다.
 
 ```
 GET <웹앱주소>?dailySummary=1
-→ {"status":"ok","summary":{"date":"2026-10-05","uniqueCount":212,"totalCount":231}}
+→ {"status":"ok","summary":{
+     "date":"2026-10-05","uniqueCount":212,"totalCount":231,
+     "byGrade":{"1":70,"2":75,"3":67},
+     "cumulativeUniqueCount":540
+   }}
 ```
 
 매일 오전 9시 · 오후 4시에 이 값을 가져와 선생님 카카오톡(나에게 보내기)으로 전송하는 건
 Apps Script가 아니라 **Claude(AI 비서)의 예약 작업**이 담당합니다. 카카오 디벨로퍼스 앱 등록이나
 REST API 키, OAuth 설정 같은 건 전혀 필요 없습니다 — Claude 쪽에 이미 연결된 카카오톡 "나에게
 보내기" 도구를 그대로 사용합니다.
-
-> 바로 테스트해보고 싶다면 `sendDailyAccessReport` 함수를 직접 실행해도 됩니다.
-> 카카오 리프레시 토큰은 보통 몇 달 이상 유지되지만, 혹시 메시지가 끊기면 3번 단계(동의하기)부터 다시 진행하면 됩니다.

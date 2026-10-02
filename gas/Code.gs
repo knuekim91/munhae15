@@ -426,20 +426,41 @@ function logAccess_(id, grade, cls, number, name) {
   getAccessLogSheet_().appendRow([kstTime, id, grade, cls, number, name]);
 }
 
-/** 특정 날짜(기본: 오늘, KST, yyyy-MM-dd)의 접속 기록 요약을 구한다. */
+/**
+ * 특정 날짜(기본: 오늘, KST, yyyy-MM-dd)의 접속 기록 요약을 구한다.
+ * byGrade: 그날 학년별 순 접속 학생 수. cumulativeUniqueCount: 누적(전체 기간) 순 접속 학생 수.
+ */
 function getDailyAccessSummary_(dateStr) {
   var targetDate = dateStr || Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
   var values = getAccessLogSheet_().getDataRange().getValues();
   var uniqueIds = {};
   var total = 0;
+  var byGrade = {};
+  var allUniqueIds = {};
   for (var i = 1; i < values.length; i++) {
     var row = values[i];
+    var sid = String(row[1]);
+    allUniqueIds[sid] = true;
+
     var dt = tsToDateAndTime_(row[0]);
     if (dt.date !== targetDate) continue;
     total++;
-    uniqueIds[String(row[1])] = true;
+    uniqueIds[sid] = true;
+
+    var grade = String(row[2]);
+    if (!byGrade[grade]) byGrade[grade] = {};
+    byGrade[grade][sid] = true;
   }
-  return { date: targetDate, uniqueCount: Object.keys(uniqueIds).length, totalCount: total };
+  var byGradeCounts = {};
+  for (var g in byGrade) byGradeCounts[g] = Object.keys(byGrade[g]).length;
+
+  return {
+    date: targetDate,
+    uniqueCount: Object.keys(uniqueIds).length,
+    totalCount: total,
+    byGrade: byGradeCounts,
+    cumulativeUniqueCount: Object.keys(allUniqueIds).length
+  };
 }
 
 function handleSetPassword_(data) {
