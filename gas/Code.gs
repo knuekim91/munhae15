@@ -39,10 +39,9 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  if (e.parameter && e.parameter.state === "kakao_setup") {
-    if (e.parameter.code) return handleKakaoOAuthCallback_(e.parameter.code);
-    return ContentService.createTextOutput("카카오 콜백에 code가 없습니다. 받은 파라미터: " + JSON.stringify(e.parameter))
-      .setMimeType(ContentService.MimeType.TEXT);
+  if (e.parameter && e.parameter.dailySummary) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", summary: getDailyAccessSummary_() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
   var studentId = e.parameter && e.parameter.studentId;
   if (studentId) {
@@ -573,125 +572,3 @@ function getSchoolwideDayCount_() {
   return Object.keys(seen).length;
 }
 
-/* =========================================================================
-   카카오톡 "나에게 보내기" — 매일 접속 현황을 담임(관리자) 본인의 카카오톡으로 전송
-   설정 방법은 저장소 README.md > "카카오톡 일일 접속 보고 설정" 참고.
-   - KAKAO_REST_API_KEY, KAKAO_REFRESH_TOKEN 은 반드시 "스크립트 속성"에만 저장합니다.
-     (이 파일은 공개 저장소에 올라가므로 여기에 실제 키·토큰을 절대 적지 마세요.)
-   ========================================================================= */
-
-var KAKAO_KEY_PROP = "KAKAO_REST_API_KEY";
-var KAKAO_REFRESH_PROP = "KAKAO_REFRESH_TOKEN";
-
-/**
- * 최초 1회 설정용: 아래 주소를 선생님 브라우저로 직접 열면(카카오 로그인 상태),
- * 동의 후 이 웹앱으로 돌아와서 토큰을 저장합니다. README 참고.
- *   https://kauth.kakao.com/oauth/authorize?client_id=<REST_API_KEY>&redirect_uri=<이 웹앱 배포 주소>&response_type=code&scope=talk_message
- */
-function handleKakaoOAuthCallback_(code) {
-  var restApiKey = PropertiesService.getScriptProperties().getProperty(KAKAO_KEY_PROP);
-  if (!restApiKey) {
-    return ContentService.createTextOutput("오류: 스크립트 속성에 KAKAO_REST_API_KEY를 먼저 저장해 주세요.")
-      .setMimeType(ContentService.MimeType.TEXT);
-  }
-  var redirectUri = ScriptApp.getService().getUrl();
-  try {
-    var res = UrlFetchApp.fetch("https://kauth.kakao.com/oauth/token", {
-      method: "post",
-      payload: {
-        grant_type: "authorization_code",
-        client_id: restApiKey,
-        redirect_uri: redirectUri,
-        code: code
-      },
-      muteHttpExceptions: true
-    });
-    var json = JSON.parse(res.getContentText());
-    if (!json.refresh_token) {
-      return ContentService.createTextOutput("카카오 인증 실패: " + res.getContentText())
-        .setMimeType(ContentService.MimeType.TEXT);
-    }
-    PropertiesService.getScriptProperties().setProperty(KAKAO_REFRESH_PROP, json.refresh_token);
-    return ContentService.createTextOutput("카카오톡 연결 완료! 이 창은 닫으셔도 됩니다. (매일 자동 보고를 받으려면 README의 트리거 설치 단계도 진행해 주세요)")
-      .setMimeType(ContentService.MimeType.TEXT);
-  } catch (err) {
-    return ContentService.createTextOutput("카카오 인증 중 오류: " + String(err))
-      .setMimeType(ContentService.MimeType.TEXT);
-  }
-}
-
-/** 저장된 리프레시 토큰으로 새 액세스 토큰을 발급받는다. 실패하면 null. */
-function getKakaoAccessToken_() {
-  var props = PropertiesService.getScriptProperties();
-  var restApiKey = props.getProperty(KAKAO_KEY_PROP);
-  var refreshToken = props.getProperty(KAKAO_REFRESH_PROP);
-  if (!restApiKey || !refreshToken) return null;
-
-  var res = UrlFetchApp.fetch("https://kauth.kakao.com/oauth/token", {
-    method: "post",
-    payload: {
-      grant_type: "refresh_token",
-      client_id: restApiKey,
-      refresh_token: refreshToken
-    },
-    muteHttpExceptions: true
-  });
-  var json = JSON.parse(res.getContentText());
-  if (!json.access_token) return null;
-
-  // 카카오가 가끔 리프레시 토큰을 갱신해서 함께 내려주므로, 그런 경우 새 값으로 덮어쓴다.
-  if (json.refresh_token) props.setProperty(KAKAO_REFRESH_PROP, json.refresh_token);
-  return json.access_token;
-}
-
-/** 카카오톡 "나에게 보내기"로 텍스트 메시지 한 통을 보낸다. */
-function sendKakaoMemo_(text) {
-  var accessToken = getKakaoAccessToken_();
-  if (!accessToken) return false;
-
-  var templateObject = {
-    object_type: "text",
-    text: text,
-    link: { web_url: "https://knuekim91.github.io/munhae15/", mobile_web_url: "https://knuekim91.github.io/munhae15/" }
-  };
-
-  var res = UrlFetchApp.fetch("https://kapi.kakao.com/v2/api/talk/memo/default/send", {
-    method: "post",
-    headers: { Authorization: "Bearer " + accessToken },
-    payload: { template_object: JSON.stringify(templateObject) },
-    muteHttpExceptions: true
-  });
-  var json = JSON.parse(res.getContentText());
-  return json.result_code === 0;
-}
-
-/** 매일 자정 직후(또는 트리거 시각)에 "오늘" 접속 현황을 집계해 카카오톡으로 보낸다. */
-function sendDailyAccessReport() {
-  var today = getDailyAccessSummary_();
-  var nowLabel = Utilities.formatDate(new Date(), "Asia/Seoul", "HH:mm");
-  var text =
-    "[문해력15분] " + today.date + " 접속 현황 (" + nowLabel + " 기준)\n" +
-    "지금까지 접속한 학생 수: " + today.uniqueCount + "명\n" +
-    "지금까지 총 로그인 횟수: " + today.totalCount + "회";
-  sendKakaoMemo_(text);
-}
-
-/**
- * ⚙️ 최초 1회만 실행하세요. (카카오 연결을 먼저 끝낸 뒤 실행)
- * 매일 오전 9시대, 오후 4시(16시)대 — 하루 두 번 sendDailyAccessReport가
- * 자동 실행되도록 예약됩니다.
- */
-function installDailyAccessReportTrigger() {
-  var triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(function (t) {
-    if (t.getHandlerFunction() === "sendDailyAccessReport") ScriptApp.deleteTrigger(t);
-  });
-  [9, 16].forEach(function (hour) {
-    ScriptApp.newTrigger("sendDailyAccessReport")
-      .timeBased()
-      .everyDays(1)
-      .atHour(hour)
-      .nearMinute(0)
-      .create();
-  });
-}
