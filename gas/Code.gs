@@ -666,26 +666,30 @@ function sendKakaoMemo_(text) {
 /** 매일 자정 직후(또는 트리거 시각)에 "오늘" 접속 현황을 집계해 카카오톡으로 보낸다. */
 function sendDailyAccessReport() {
   var today = getDailyAccessSummary_();
+  var nowLabel = Utilities.formatDate(new Date(), "Asia/Seoul", "HH:mm");
   var text =
-    "[문해력15분] " + today.date + " 접속 현황\n" +
-    "오늘 접속한 학생 수: " + today.uniqueCount + "명\n" +
-    "오늘 총 로그인 횟수: " + today.totalCount + "회";
+    "[문해력15분] " + today.date + " 접속 현황 (" + nowLabel + " 기준)\n" +
+    "지금까지 접속한 학생 수: " + today.uniqueCount + "명\n" +
+    "지금까지 총 로그인 횟수: " + today.totalCount + "회";
   sendKakaoMemo_(text);
 }
 
 /**
  * ⚙️ 최초 1회만 실행하세요. (카카오 연결을 먼저 끝낸 뒤 실행)
- * 매일 밤 9시(21시)대에 sendDailyAccessReport가 자동 실행되도록 예약됩니다.
+ * 매일 오전 9시대, 오후 4시(16시)대 — 하루 두 번 sendDailyAccessReport가
+ * 자동 실행되도록 예약됩니다.
  */
 function installDailyAccessReportTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(function (t) {
     if (t.getHandlerFunction() === "sendDailyAccessReport") ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger("sendDailyAccessReport")
-    .timeBased()
-    .everyDays(1)
-    .atHour(21)
-    .nearMinute(0)
-    .create();
+  [9, 16].forEach(function (hour) {
+    ScriptApp.newTrigger("sendDailyAccessReport")
+      .timeBased()
+      .everyDays(1)
+      .atHour(hour)
+      .nearMinute(0)
+      .create();
+  });
 }
