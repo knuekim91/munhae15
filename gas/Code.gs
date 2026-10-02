@@ -39,8 +39,10 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  if (e.parameter && e.parameter.state === "kakao_setup" && e.parameter.code) {
-    return handleKakaoOAuthCallback_(e.parameter.code);
+  if (e.parameter && e.parameter.state === "kakao_setup") {
+    if (e.parameter.code) return handleKakaoOAuthCallback_(e.parameter.code);
+    return ContentService.createTextOutput("카카오 콜백에 code가 없습니다. 받은 파라미터: " + JSON.stringify(e.parameter))
+      .setMimeType(ContentService.MimeType.TEXT);
   }
   var studentId = e.parameter && e.parameter.studentId;
   if (studentId) {
