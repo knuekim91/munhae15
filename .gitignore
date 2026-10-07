@@ -2,3 +2,6 @@ __pycache__/
 
 # 정답이 포함된 정기고사 파일은 공개 저장소에 두지 않는다 (구글 드라이브에 별도 보관)
 worksheets/정기고사/
+
+# 옛 정기고사 생성기(정답 포함) — 새 시험 문항은 worksheets/정기고사/ 에서 관리
+worksheets/generate_exams.py

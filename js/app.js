@@ -196,6 +196,8 @@ function renderSidebar(){
   }
 
   if(typeof EXAM_LIST !== "undefined" && EXAM_LIST.length){
+    if(typeof ensureExamStatus === "function") ensureExamStatus();
+
     const examGroup = document.createElement("div");
     examGroup.className = "week-group exam-group open";
 
@@ -207,18 +209,18 @@ function renderSidebar(){
     const examList = document.createElement("div");
     examList.className = "week-days";
     EXAM_LIST.forEach(ex => {
-      const hasFile = !!ex.file;
-      const item = document.createElement(hasFile ? "a" : "div");
-      item.className = "day-item exam-file-item";
-      if(hasFile){
-        item.href = encodeURI(ex.file);
-        item.target = "_blank";
-        item.rel = "noopener";
-      }
+      const state = (typeof examStateOf === "function") ? examStateOf(ex.id) : "before";
+      const linkable = state === "open" || state === "closed";
+      const item = document.createElement(linkable ? "a" : "div");
+      item.className = "day-item exam-file-item"
+        + (state === "open" ? " exam-open" : state === "before" ? " exam-wait" : "")
+        + (currentId === "exam-" + ex.id ? " active" : "");
+      if(linkable) item.href = "#exam-" + ex.id;
+      const tag = state === "open" ? "응시 가능" : state === "closed" ? "종료" : "시험 예정";
       item.innerHTML = `
         <span class="day-type-icon">📝</span>
         <span class="day-label">${ex.term} ${ex.label}</span>
-        ${hasFile ? "" : `<span class="day-tag">시험 직전 공개</span>`}`;
+        <span class="day-tag">${tag}</span>`;
       examList.appendChild(item);
     });
     examGroup.appendChild(examList);
@@ -292,8 +294,18 @@ function toast(msg){
 /* ---------------- router ---------------- */
 function router(){
   const id = location.hash.replace("#","") || firstAvailableDay();
-  const day = findDay(id);
   const content = document.getElementById("content");
+
+  if(id.startsWith("exam-") && typeof renderExamRoute === "function"){
+    content.innerHTML = "";
+    content.scrollTop = 0; window.scrollTo(0,0);
+    renderExamRoute(content, id.slice(5));
+    renderSidebar();
+    return;
+  }
+  if(typeof leaveExamRoute === "function") leaveExamRoute();
+
+  const day = findDay(id);
   content.innerHTML = "";
   content.scrollTop = 0; window.scrollTo(0,0);
 

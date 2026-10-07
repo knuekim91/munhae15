@@ -50,13 +50,13 @@ const TOPICS = [
   { unit: "u7", title: "SNS·온라인 소통 언어" },
 ];
 
-/* 시험 파일은 정답이 포함돼 있어 공개 저장소에 두지 않고, 시험 직전에만
-   구글 드라이브 링크(file)를 채워 넣는다. 평소엔 file: null로 비활성 표시. */
+/* 시험 문항·정답은 공개 저장소가 아니라 구글 시트("시험문항")에 있다.
+   id는 시트의 시험ID이며, 시험이 열리는 시각은 시트의 "시험설정" 탭에서 정한다. */
 const EXAM_WEEKS = {
-  8:  { label: "중간시험", term: "1학기", file: null },
-  16: { label: "기말시험", term: "1학기", file: null },
-  24: { label: "중간시험", term: "2학기", file: null },
-  32: { label: "기말시험", term: "2학기", file: null },
+  8:  { id: "mid1",   label: "중간시험", term: "1학기" },
+  16: { id: "final1", label: "기말시험", term: "1학기" },
+  24: { id: "mid2",   label: "중간시험", term: "2학기" },
+  32: { id: "final2", label: "기말시험", term: "2학기" },
 };
 
 /* 사이드바 상단 "정기고사" 메뉴용 목록 */

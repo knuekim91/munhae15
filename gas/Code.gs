@@ -26,6 +26,10 @@ function doPost(e) {
       case "adminStatus": result = handleAdminStatus_(data); break;
       case "adminReset": result = handleAdminReset_(data); break;
       case "adminTeachers": result = handleAdminTeachers_(data); break;
+      case "examStart": result = handleExamStart_(data); break;
+      case "examSave": result = handleExamSave_(data); break;
+      case "examSubmit": result = handleExamSubmit_(data); break;
+      case "examResult": result = handleExamResult_(data); break;
       default:
         appendRow_(data);
         result = { status: "ok" };
@@ -41,6 +45,10 @@ function doPost(e) {
 function doGet(e) {
   if (e.parameter && e.parameter.dailySummary) {
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", summary: getDailyAccessSummary_() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  if (e.parameter && e.parameter.examStatus) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", exams: getExamStatusList_(), serverNow: Date.now() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
   var studentId = e.parameter && e.parameter.studentId;
@@ -593,3 +601,513 @@ function getSchoolwideDayCount_() {
   return Object.keys(seen).length;
 }
 
+
+/* =========================================================================
+   정기시험(중간·기말시험) — 태블릿/휴대폰 응시
+   - 문항·정답·해설은 구글 시트("시험문항" 탭)에만 있고 공개 저장소에는 올리지 않습니다.
+   - "시험설정" 탭의 시작~종료 시각 사이에만 문항(정답 제외)을 내려줍니다.
+   - 채점은 모두 이 서버에서 합니다. 학생·시험당 1회 제출(제출 전에는 몇 번이든 고칠 수 있음).
+   - 객관식·단답형은 자동 채점, 서술형은 핵심어 규칙으로 1차 채점 후 애매하면 "확인필요".
+   최초 1회 편집기에서 시험준비() 함수를 실행해 시트와 비밀 키를 만들어 두세요.
+   ========================================================================= */
+
+var EXAM_CONFIG_SHEET_NAME = "시험설정";
+var EXAM_CONFIG_HEADER = ["시험ID", "시험이름", "시작(KST)", "종료(KST)", "공개범위"];
+var EXAM_ITEM_SHEET_NAME = "시험문항";
+var EXAM_ITEM_HEADER = ["시험ID", "번호", "유형", "제시", "문제", "지문", "보기1", "보기2", "보기3", "보기4", "보기5", "정답", "배점", "해설", "모범답안"];
+var EXAM_RESULT_SHEET_NAME = "시험응시";
+var EXAM_RESULT_HEADER = ["시험ID", "학번코드", "학년", "반", "번호", "이름", "상태", "제출시각", "객관식점수", "단답점수", "서술점수(자동)", "서술상태", "서술점수(교사확정)", "총점", "서술답안", "답안JSON"];
+var EXAM_SUBMIT_GRACE_MS = 120 * 1000;
+var EXAM_DRAFT_TTL_SEC = 21600;
+var EXAM_ITEM_CACHE_SEC = 300;
+var EXAM_ESSAY_MIN_LEN = 10;
+var EXAM_CIRCLE = ["①", "②", "③", "④", "⑤"];
+
+function 시험준비() {
+  getExamConfigSheet_();
+  getExamItemSheet_();
+  getExamResultSheet_();
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty("EXAM_SECRET")) {
+    props.setProperty("EXAM_SECRET", Utilities.getUuid() + Utilities.getUuid());
+  }
+}
+
+/** 시험 종료 후 실행: 제출 버튼을 누르지 못한 학생의 임시저장 답안을 채점해 "자동제출"로 기록한다. */
+function 시험마감처리() {
+  var list = getExamStatusList_(true);
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].state === "closed") finalizeExamDrafts_(list[i].id);
+  }
+}
+
+function getExamConfigSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(EXAM_CONFIG_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(EXAM_CONFIG_SHEET_NAME);
+    sheet.appendRow(EXAM_CONFIG_HEADER);
+    sheet.setFrozenRows(1);
+    sheet.getRange(2, 3, 50, 2).setNumberFormat("@");
+    sheet.appendRow(["mid1", "1학기 중간시험", "", "", "전체"]);
+    sheet.appendRow(["final1", "1학기 기말시험", "", "", "전체"]);
+    sheet.appendRow(["mid2", "2학기 중간시험", "", "", "전체"]);
+    sheet.appendRow(["final2", "2학기 기말시험", "", "", "전체"]);
+  }
+  return sheet;
+}
+
+function getExamItemSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(EXAM_ITEM_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(EXAM_ITEM_SHEET_NAME);
+    sheet.appendRow(EXAM_ITEM_HEADER);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getExamResultSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(EXAM_RESULT_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(EXAM_RESULT_SHEET_NAME);
+    sheet.appendRow(EXAM_RESULT_HEADER);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/** "2026-10-20 08:30"(KST) 문자열 또는 날짜 셀을 epoch ms로. 비었거나 형식이 틀리면 null. */
+function examTimeToMs_(v) {
+  if (v === "" || v === null || v === undefined) return null;
+  if (Object.prototype.toString.call(v) === "[object Date]") return v.getTime();
+  var m = /^\s*(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/.exec(String(v));
+  if (!m) return null;
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] || 0) - 9, Number(m[5] || 0));
+}
+
+function getExamConfig_(examId) {
+  var values = getExamConfigSheet_().getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) !== String(examId)) continue;
+    return {
+      id: String(values[i][0]),
+      name: String(values[i][1] || ""),
+      startMs: examTimeToMs_(values[i][2]),
+      endMs: examTimeToMs_(values[i][3]),
+      scope: String(values[i][4] || "전체") === "점수" ? "점수" : "전체"
+    };
+  }
+  return null;
+}
+
+/** before(예정·미설정) / open(응시 가능) / closed(종료) */
+function examState_(cfg, nowMs) {
+  if (!cfg || cfg.startMs === null || cfg.endMs === null) return "before";
+  if (nowMs < cfg.startMs) return "before";
+  if (nowMs > cfg.endMs) return "closed";
+  return "open";
+}
+
+function getExamStatusList_(skipCache) {
+  var cache = CacheService.getScriptCache();
+  if (!skipCache) {
+    var hit = cache.get("examstatus");
+    if (hit) return JSON.parse(hit);
+  }
+  var values = getExamConfigSheet_().getDataRange().getValues();
+  var now = Date.now();
+  var list = [];
+  for (var i = 1; i < values.length; i++) {
+    if (!values[i][0]) continue;
+    var cfg = getExamConfig_(values[i][0]);
+    list.push({ id: cfg.id, name: cfg.name, state: examState_(cfg, now), startMs: cfg.startMs, endMs: cfg.endMs });
+  }
+  cache.put("examstatus", JSON.stringify(list), 30);
+  return list;
+}
+
+function sha256Hex_(raw) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw, Utilities.Charset.UTF_8);
+  return digest.map(function (b) { return ("0" + ((b + 256) % 256).toString(16)).slice(-2); }).join("");
+}
+
+/** 비밀번호를 한 번 확인한 학생에게만 내주는 응시 토큰(시험별·학생별). 서버에 따로 저장하지 않는다. */
+function examToken_(examId, studentId) {
+  var secret = PropertiesService.getScriptProperties().getProperty("EXAM_SECRET");
+  if (!secret) throw new Error("시험준비()를 먼저 실행하세요.");
+  return sha256Hex_(secret + ":" + examId + ":" + studentId);
+}
+
+function examTokenOk_(data) {
+  var sid = String(data.studentId || "");
+  return !!sid && !!data.token && String(data.token) === examToken_(String(data.examId), sid);
+}
+
+/** 비밀번호(최초 입장) 또는 토큰(이어하기)으로 본인 확인. */
+function examAuth_(data) {
+  var sid = String(data.studentId || "");
+  if (!/^\d{4}$/.test(sid)) return { ok: false, reason: "auth" };
+  if (data.password !== undefined && data.password !== null && data.password !== "") {
+    var sheet = getAccountSheet_();
+    var rowIdx = findAccountRow_(sheet, sid);
+    if (rowIdx === -1) return { ok: false, reason: "auth" };
+    var storedHash = String(sheet.getRange(rowIdx, 2).getValue());
+    if (hashPassword_(sid, String(data.password)) !== storedHash) return { ok: false, reason: "password" };
+    return { ok: true, id: sid };
+  }
+  if (examTokenOk_(data)) return { ok: true, id: sid };
+  return { ok: false, reason: "auth" };
+}
+
+function examStudentInfo_(sid) {
+  var grade = sid.charAt(0), cls = sid.charAt(1), number = Number(sid.slice(2));
+  var name = findRosterName_(grade, cls, number);
+  return { id: sid, grade: grade, cls: cls, number: number, name: name === null ? "" : name };
+}
+
+function loadExamItems_(examId) {
+  var cache = CacheService.getScriptCache();
+  var key = "examitems:" + examId;
+  var hit = cache.get(key);
+  if (hit) return JSON.parse(hit);
+
+  var values = getExamItemSheet_().getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i < values.length; i++) {
+    var r = values[i];
+    if (String(r[0]) !== String(examId) || r[1] === "") continue;
+    var options = [];
+    for (var c = 6; c <= 10; c++) {
+      if (r[c] !== "" && r[c] !== null && r[c] !== undefined) options.push(String(r[c]));
+    }
+    items.push({
+      no: Number(r[1]),
+      type: String(r[2]),
+      shown: String(r[3] || ""),
+      stem: String(r[4] || ""),
+      passage: String(r[5] || ""),
+      options: options,
+      answer: r[11],
+      points: Number(r[12]) || 1,
+      explanation: String(r[13] || ""),
+      model: String(r[14] || "")
+    });
+  }
+  items.sort(function (a, b) { return a.no - b.no; });
+  cache.put(key, JSON.stringify(items), EXAM_ITEM_CACHE_SEC);
+  return items;
+}
+
+/** 학생에게 내려주는 문항(정답·해설·모범답안 제외). */
+function publicExamItems_(items) {
+  return items.map(function (it) {
+    return { no: it.no, type: it.type, shown: it.shown, stem: it.stem, passage: it.passage, options: it.options, points: it.points };
+  });
+}
+
+/* ---------- 채점 ---------- */
+
+/** 공백·문장부호를 없애고 소문자로 맞춘다(띄어쓰기·마침표 차이로 틀리지 않게). */
+function normAnswer_(s) {
+  var t = String(s === null || s === undefined ? "" : s);
+  if (typeof t.normalize === "function") t = t.normalize("NFC");
+  return t.toLowerCase().replace(/[\s.,;:!?'"‘’“”()\[\]{}<>~\-_\/·ㆍ]/g, "");
+}
+
+/**
+ * 서술형 모범 규칙: 핵심어 그룹을 ";"로, 한 그룹의 유의어를 "|"로 적는다.
+ *   예) "서명|기한|늦;반려|접수되지|돌려"  → 두 그룹에서 각각 하나 이상 들어 있으면 만점
+ * 그룹 중 일부만 충족하면 비율만큼 부분 점수(0.5점 단위)를 주고 "확인필요"로 표시한다.
+ */
+function gradeEssay_(item, raw) {
+  var text = normAnswer_(raw);
+  if (!text) return { score: 0, status: "확정", hit: 0, total: 0 };
+  var groups = String(item.answer).split(";").map(function (g) {
+    return g.split("|").map(normAnswer_).filter(function (x) { return x; });
+  }).filter(function (g) { return g.length; });
+  var total = groups.length;
+  var hit = 0;
+  groups.forEach(function (g) {
+    for (var i = 0; i < g.length; i++) {
+      if (text.indexOf(g[i]) >= 0) { hit++; return; }
+    }
+  });
+  var score = total ? Math.round(item.points * (hit / total) * 2) / 2 : 0;
+  var confirmed = total > 0 && hit === total && text.length >= EXAM_ESSAY_MIN_LEN;
+  return { score: score, status: confirmed ? "확정" : "확인필요", hit: hit, total: total };
+}
+
+function gradeExam_(items, answers) {
+  var per = [];
+  var objective = 0, shortSum = 0, essayAuto = 0, max = 0;
+  var essayStatus = "확정";
+  items.forEach(function (it) {
+    var raw = answers ? answers[String(it.no)] : undefined;
+    var r = { no: it.no, type: it.type, points: it.points, got: 0, correct: false, status: "확정", studentAnswer: raw === undefined || raw === null ? "" : raw };
+    max += it.points;
+    if (it.type === "객관식") {
+      r.correct = Number(raw) === Number(it.answer);
+      r.got = r.correct ? it.points : 0;
+      objective += r.got;
+    } else if (it.type === "단답형") {
+      var accepted = String(it.answer).split("|").map(normAnswer_).filter(function (x) { return x; });
+      var s = normAnswer_(raw);
+      r.correct = !!s && accepted.indexOf(s) >= 0;
+      r.got = r.correct ? it.points : 0;
+      shortSum += r.got;
+    } else if (it.type === "서술형") {
+      var g = gradeEssay_(it, raw);
+      r.got = g.score;
+      r.status = g.status;
+      r.correct = g.status === "확정" ? g.score >= it.points : null;
+      essayAuto += g.score;
+      if (g.status !== "확정") essayStatus = "확인필요";
+    }
+    per.push(r);
+  });
+  return { per: per, objective: objective, short: shortSum, essayAuto: essayAuto, essayStatus: essayStatus, max: max };
+}
+
+function sanitizeExamAnswers_(raw, items) {
+  var out = {};
+  if (!raw || typeof raw !== "object") return out;
+  items.forEach(function (it) {
+    var v = raw[String(it.no)];
+    if (v === undefined || v === null || v === "") return;
+    if (it.type === "객관식") {
+      var n = Math.floor(Number(v));
+      if (n >= 1 && n <= it.options.length) out[String(it.no)] = n;
+    } else {
+      var limit = it.type === "서술형" ? 600 : 60;
+      out[String(it.no)] = String(v).slice(0, limit);
+    }
+  });
+  return out;
+}
+
+function examAnswerText_(it) {
+  if (it.type === "객관식") {
+    var idx = Number(it.answer) - 1;
+    return (EXAM_CIRCLE[idx] || "") + " " + (it.options[idx] || "");
+  }
+  if (it.type === "단답형") return String(it.answer).split("|").join(" / ");
+  return it.model;
+}
+
+/** 채점 결과를 학생에게 보여줄 형태로 만든다. 공개범위가 "점수"면 문항별 상세는 제외한다. */
+function buildExamResult_(cfg, items, answers, saved) {
+  var g = gradeExam_(items, answers);
+  var teacherEssay = saved && saved.teacherEssay !== null && saved.teacherEssay !== undefined ? saved.teacherEssay : null;
+  var essayScore = teacherEssay !== null ? teacherEssay : g.essayAuto;
+  var essayPending = teacherEssay === null && g.essayStatus !== "확정";
+  var out = {
+    status: "ok",
+    phase: "result",
+    exam: { id: cfg.id, name: cfg.name },
+    score: g.objective + g.short + essayScore,
+    max: g.max,
+    parts: { objective: g.objective, short: g.short, essay: essayScore },
+    essayPending: essayPending,
+    submittedAt: saved ? saved.submittedAt : "",
+    submitStatus: saved ? saved.status : "",
+    detail: null
+  };
+  if (cfg.scope !== "점수") {
+    out.detail = items.map(function (it, i) {
+      var r = g.per[i];
+      var got = (it.type === "서술형" && teacherEssay !== null) ? teacherEssay : r.got;
+      return {
+        no: it.no, type: it.type, shown: it.shown, stem: it.stem, passage: it.passage, options: it.options,
+        points: it.points, got: got,
+        correct: (it.type === "서술형") ? (essayPending ? null : got >= it.points) : r.correct,
+        studentAnswer: r.studentAnswer,
+        answerText: examAnswerText_(it),
+        explanation: it.explanation
+      };
+    });
+  }
+  return out;
+}
+
+/* ---------- 응시 기록 ---------- */
+
+function formatKst_(v) {
+  if (Object.prototype.toString.call(v) === "[object Date]") return Utilities.formatDate(v, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  return String(v);
+}
+
+function safeJsonParse_(s) {
+  try { return JSON.parse(String(s)); } catch (e) { return {}; }
+}
+
+function findExamResult_(sheet, examId, sid) {
+  var last = sheet.getLastRow();
+  if (last < 2) return null;
+  var keys = sheet.getRange(2, 1, last - 1, 2).getValues();
+  for (var i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]) === String(examId) && String(keys[i][1]) === String(sid)) {
+      var rowIdx = i + 2;
+      var row = sheet.getRange(rowIdx, 1, 1, EXAM_RESULT_HEADER.length).getValues()[0];
+      var t = row[12];
+      return {
+        rowIdx: rowIdx,
+        status: String(row[6]),
+        submittedAt: formatKst_(row[7]),
+        teacherEssay: (t === "" || t === null || t === undefined || isNaN(Number(t))) ? null : Number(t),
+        answers: safeJsonParse_(row[15])
+      };
+    }
+  }
+  return null;
+}
+
+function draftKey_(examId, sid) { return "examdraft:" + examId + ":" + sid; }
+
+function readExamDraft_(examId, sid) {
+  var hit = CacheService.getScriptCache().get(draftKey_(examId, sid));
+  return hit ? JSON.parse(hit) : null;
+}
+
+/** 채점해서 "시험응시" 시트에 한 줄 기록한다(이미 제출했다면 그 결과를 그대로 돌려준다). */
+function recordExamSubmission_(cfg, items, student, rawAnswers, submitStatus) {
+  var answers = sanitizeExamAnswers_(rawAnswers, items);
+  var g = gradeExam_(items, answers);
+  var essayText = "";
+  items.forEach(function (it) { if (it.type === "서술형" && answers[String(it.no)]) essayText = answers[String(it.no)]; });
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(25000); } catch (e) { return { status: "error", reason: "busy" }; }
+  try {
+    var rs = getExamResultSheet_();
+    var existing = findExamResult_(rs, cfg.id, student.id);
+    if (existing) return buildExamResult_(cfg, items, existing.answers, existing);
+
+    var now = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+    rs.appendRow([
+      cfg.id, student.id, student.grade, student.cls, student.number, student.name,
+      submitStatus, now, g.objective, g.short, g.essayAuto, g.essayStatus, "", "",
+      essayText, JSON.stringify(answers)
+    ]);
+    var r = rs.getLastRow();
+    rs.getRange(r, 14).setFormula("=I" + r + "+J" + r + "+IF(M" + r + "<>\"\",M" + r + ",K" + r + ")");
+    CacheService.getScriptCache().remove(draftKey_(cfg.id, student.id));
+    return buildExamResult_(cfg, items, answers, { status: submitStatus, submittedAt: now, teacherEssay: null });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ---------- API 처리기 ---------- */
+
+function handleExamStart_(data) {
+  var cfg = getExamConfig_(data.examId);
+  if (!cfg) return { status: "error", reason: "no_exam" };
+  var auth = examAuth_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+
+  var items = loadExamItems_(cfg.id);
+  if (!items.length) return { status: "error", reason: "no_items" };
+
+  var token = examToken_(cfg.id, auth.id);
+  var existing = findExamResult_(getExamResultSheet_(), cfg.id, auth.id);
+  if (existing) {
+    var res = buildExamResult_(cfg, items, existing.answers, existing);
+    res.token = token;
+    return res;
+  }
+
+  var now = Date.now();
+  var state = examState_(cfg, now);
+  if (state === "before") return { status: "error", reason: "not_open", startMs: cfg.startMs };
+
+  var draft = readExamDraft_(cfg.id, auth.id);
+  if (state === "closed") {
+    if (!draft) return { status: "error", reason: "closed" };
+    var auto = recordExamSubmission_(cfg, items, examStudentInfo_(auth.id), draft.answers, "자동제출");
+    if (auto.status === "ok") auto.token = token;
+    return auto;
+  }
+
+  return {
+    status: "ok", phase: "exam", token: token,
+    exam: { id: cfg.id, name: cfg.name, startMs: cfg.startMs, endMs: cfg.endMs },
+    serverNow: now,
+    items: publicExamItems_(items),
+    draft: draft
+  };
+}
+
+function handleExamSave_(data) {
+  if (!examTokenOk_(data)) return { status: "error", reason: "auth" };
+  var payload = JSON.stringify({ answers: data.answers || {}, savedAt: Date.now() });
+  if (payload.length > 90000) return { status: "error", reason: "too_large" };
+  CacheService.getScriptCache().put(draftKey_(String(data.examId), String(data.studentId)), payload, EXAM_DRAFT_TTL_SEC);
+  return { status: "ok", savedAt: Date.now() };
+}
+
+function handleExamSubmit_(data) {
+  var cfg = getExamConfig_(data.examId);
+  if (!cfg) return { status: "error", reason: "no_exam" };
+  if (!examTokenOk_(data)) return { status: "error", reason: "auth" };
+  var sid = String(data.studentId);
+
+  var items = loadExamItems_(cfg.id);
+  if (!items.length) return { status: "error", reason: "no_items" };
+
+  var existing = findExamResult_(getExamResultSheet_(), cfg.id, sid);
+  if (existing) return buildExamResult_(cfg, items, existing.answers, existing);
+
+  var now = Date.now();
+  var withinWindow = cfg.startMs !== null && cfg.endMs !== null && now >= cfg.startMs && now <= cfg.endMs + EXAM_SUBMIT_GRACE_MS;
+  if (!withinWindow) return { status: "error", reason: "closed" };
+
+  return recordExamSubmission_(cfg, items, examStudentInfo_(sid), data.answers, "제출");
+}
+
+function handleExamResult_(data) {
+  var cfg = getExamConfig_(data.examId);
+  if (!cfg) return { status: "error", reason: "no_exam" };
+  if (!examTokenOk_(data)) return { status: "error", reason: "auth" };
+  var existing = findExamResult_(getExamResultSheet_(), cfg.id, String(data.studentId));
+  if (!existing) return { status: "error", reason: "not_submitted" };
+  return buildExamResult_(cfg, loadExamItems_(cfg.id), existing.answers, existing);
+}
+
+/** 종료된 시험의 임시저장 답안을 일괄 채점·기록한다. */
+function finalizeExamDrafts_(examId) {
+  var cfg = getExamConfig_(examId);
+  var items = loadExamItems_(examId);
+  if (!cfg || !items.length) return;
+
+  var rs = getExamResultSheet_();
+  var done = {};
+  var last = rs.getLastRow();
+  if (last >= 2) {
+    var keys = rs.getRange(2, 1, last - 1, 2).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]) === String(examId)) done[String(keys[i][1])] = true;
+    }
+  }
+
+  var roster = getRosterSheet_().getDataRange().getValues();
+  var pending = [];
+  for (var r = 1; r < roster.length; r++) {
+    var id = studentId_(roster[r][0], roster[r][1], roster[r][2]);
+    if (!done[id]) pending.push(id);
+  }
+
+  var cache = CacheService.getScriptCache();
+  for (var start = 0; start < pending.length; start += 100) {
+    var batch = pending.slice(start, start + 100);
+    var keyList = batch.map(function (id) { return draftKey_(examId, id); });
+    var found = cache.getAll(keyList);
+    batch.forEach(function (id) {
+      var raw = found[draftKey_(examId, id)];
+      if (!raw) return;
+      recordExamSubmission_(cfg, items, examStudentInfo_(id), JSON.parse(raw).answers, "자동제출");
+    });
+  }
+}

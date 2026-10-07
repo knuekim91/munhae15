@@ -203,13 +203,15 @@ a{ color:inherit; }
 .day-item.done .day-dot::after{ content:"✓"; color:#fff; font-size:9px; }
 .day-item.locked{ opacity:.5; }
 
-/* 중간·기말시험은 휴대폰 5지선다 앱 문제로 대체 예정이라, 당분간
-   비활성화된 것처럼 흐리게 표시(파일은 그대로 열람 가능) */
-.exam-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); opacity:.45; }
+/* 정기고사 메뉴: 시험이 열리면(응시 가능) 강조, 아직 일정 전이면 흐리게 */
+.exam-group{ margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
 .exam-section-head{ cursor:default; }
 .exam-section-head:hover{ background:none; }
 .exam-file-item{ text-decoration:none; }
-.exam-file-item:hover{ background:none; }
+.exam-file-item.exam-wait{ opacity:.45; cursor:default; }
+.exam-file-item.exam-wait:hover{ background:none; color:var(--text-dim); }
+.exam-file-item.exam-open{ font-weight:700; color:var(--text); border-left-color:var(--accent); }
+.exam-file-item.exam-open .day-tag{ background:var(--accent); color:#fff; }
 
 /* 전체 학습지 PDF 링크: 정기고사와 달리 실제로 눌러서 여는 링크이므로
    흐리게 표시하지 않고, 정기고사 목록과는 얇은 구분선으로만 분리 */
@@ -617,4 +619,79 @@ body.pre-login .mileage-chip{ display:none; }
   .splash-title-lg{ font-size:52px; }
   .splash-sub{ font-size:19px; margin-bottom:40px; }
   .splash-btn{ width:100%; padding:20px 30px; font-size:19px; }
+}
+
+
+/* ============ 정기시험 응시 화면 ============ */
+.exam-intro{ text-align:center; padding:34px 22px; }
+.exam-intro-emoji{ font-size:44px; margin-bottom:6px; }
+.exam-intro .page-title, .exam-intro .page-sub{ text-align:center; }
+.exam-rules{ text-align:left; max-width:560px; margin:18px auto 22px; padding-left:20px; line-height:1.8; font-size:14.5px; color:var(--text-dim); }
+.exam-rules li{ margin-bottom:6px; }
+.exam-intro .btn-row{ justify-content:center; }
+.exam-pw{ width:min(100%,260px); text-align:center; margin:6px auto 10px; display:block; }
+.exam-intro .login-error{ margin:0 auto 10px; }
+.exam-message-title{ font-weight:800; font-size:16px; margin-bottom:6px; }
+.exam-message-body{ color:var(--text-dim); line-height:1.7; }
+.exam-message-actions{ justify-content:center; margin-top:16px; }
+
+.exam-paper-head{ margin-bottom:6px; }
+.exam-q{ margin-bottom:14px; scroll-margin-top:72px; }
+.exam-q.answered{ border-color:var(--accent); }
+.exam-q-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.exam-q-meta{ font-size:12px; font-weight:700; color:var(--text-faint); }
+.exam-q .passage-box{ margin-bottom:12px; font-size:14.5px; }
+.exam-stem{ margin-bottom:8px; }
+.exam-shown{
+  background:var(--bg-soft); border-radius:var(--radius-sm);
+  padding:12px 14px; margin-bottom:12px; line-height:1.7; font-size:15px; white-space:pre-line;
+}
+.exam-ul{ text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:2px; font-weight:800; }
+.exam-opt{ min-height:48px; user-select:none; -webkit-tap-highlight-color:transparent; }
+.exam-opt-no{ font-weight:800; color:var(--text-faint); width:22px; flex:none; text-align:center; }
+.exam-opt.selected .exam-opt-no{ color:var(--accent-text); }
+.exam-opt-text{ flex:1; line-height:1.5; }
+.exam-opt-mine{ font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; background:var(--bg-soft); color:var(--text-dim); flex:none; }
+.exam-short{ width:min(100%,320px); }
+.exam-essay{
+  width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 14px; font-size:16px; line-height:1.6; font-family:inherit; resize:vertical;
+  background:var(--bg-elevated); color:var(--text);
+}
+.exam-essay:focus{ outline:none; border-color:var(--accent); }
+.exam-essay-count{ text-align:right; font-size:12px; color:var(--text-faint); margin-top:4px; }
+
+.exam-bar{
+  position:sticky; bottom:0; z-index:15; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:var(--bg-elevated); border-top:1px solid var(--border); box-shadow:0 -6px 18px rgba(0,0,0,.08);
+  padding:12px 16px; margin:18px -4px 0; border-radius:var(--radius-md) var(--radius-md) 0 0;
+}
+.exam-bar-info{ display:flex; flex-direction:column; gap:2px; font-size:13px; min-width:0; }
+.exam-bar-count{ font-weight:800; }
+.exam-bar-time{ color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.exam-bar-time.warn{ color:var(--bad); font-weight:800; }
+.exam-bar-save{ color:var(--text-faint); font-size:12px; }
+.exam-submit-btn{ flex:none; min-width:112px; }
+.exam-confirm-body{ white-space:pre-line; margin-bottom:14px; }
+
+.exam-result{ margin-bottom:6px; }
+.exam-result-name{ font-weight:800; color:var(--text-dim); margin-bottom:6px; }
+.exam-pending{ margin:12px auto 0; max-width:420px; font-size:13px; line-height:1.6; color:var(--accent-text); background:var(--accent-dim); border-radius:var(--radius-sm); padding:10px 12px; }
+.exam-submitted-at{ margin-top:12px; font-size:12px; color:var(--text-faint); }
+.exam-q-got{ margin-left:auto; font-weight:800; font-size:13px; color:var(--text-dim); }
+.exam-badge-r{ font-size:11px; font-weight:800; padding:2px 8px; border-radius:6px; }
+.exam-badge-ok{ background:var(--good-bg); color:var(--good); }
+.exam-badge-bad{ background:var(--bad-bg); color:var(--bad); }
+.exam-badge-pending{ background:var(--accent-dim); color:var(--accent-text); }
+.exam-r-ok{ border-color:var(--good); }
+.exam-r-bad{ border-color:var(--bad); }
+.exam-ans-row{ display:flex; gap:10px; align-items:flex-start; padding:9px 12px; border-radius:var(--radius-sm); background:var(--bg-soft); margin-bottom:8px; font-size:14.5px; line-height:1.6; }
+.exam-ans-right{ background:var(--good-bg); }
+.exam-ans-label{ font-weight:800; font-size:12px; color:var(--text-dim); flex:none; width:56px; padding-top:2px; }
+.exam-ans-text{ flex:1; white-space:pre-line; }
+.exam-explain{ margin-top:10px; padding:10px 12px; border-left:3px solid var(--accent); background:var(--accent-dim); border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:13.5px; line-height:1.7; color:var(--text-dim); }
+
+@media (max-width:600px){
+  .exam-bar{ padding:10px 12px; margin:16px -8px 0; }
+  .exam-submit-btn{ min-width:96px; padding-left:14px; padding-right:14px; }
 }
