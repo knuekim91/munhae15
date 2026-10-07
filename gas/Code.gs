@@ -1122,6 +1122,7 @@ function finalizeExamDrafts_(examId) {
    ========================================================================= */
 
 var EXAM_STAT_TAB_NAMES = { mid1: "통계_1학기중간", final1: "통계_1학기기말", mid2: "통계_2학기중간", final2: "통계_2학기기말" };
+var EXAM_STAT_EXCLUDE_CLASSES = [9];   // 테스트 반(예: 1학년 9반)은 통계 표에서 뺀다
 var EXAM_STAT_HEADER = ["반", "재적", "응시", "미응시", "객관식", "단답형", "서술형", "총점", "평균(재적 기준)", "석차", "응시자 평균(참고)", "서술 확인필요(건)"];
 
 function 시험통계시트만들기() {
@@ -1146,13 +1147,13 @@ function ensureExamResultFinalColumn_() {
   sheet.getRange(2, 17, last - 1, 1).setFormulas(formulas);
 }
 
-/** 명렬에서 학년별로 실제 있는 반 번호 목록을 구한다. 명렬이 비어 있으면 1~8반으로 가정. */
+/** 명렬에서 학년별로 실제 있는 반 번호 목록을 구한다(테스트 반 제외). 명렬이 비어 있으면 1~8반으로 가정. */
 function getRosterClassesByGrade_() {
   var values = getRosterSheet_().getDataRange().getValues();
   var seen = { 1: {}, 2: {}, 3: {} };
   for (var i = 1; i < values.length; i++) {
     var g = Number(values[i][0]), c = Number(values[i][1]);
-    if (seen[g] && c >= 1) seen[g][c] = true;
+    if (seen[g] && c >= 1 && EXAM_STAT_EXCLUDE_CLASSES.indexOf(c) < 0) seen[g][c] = true;
   }
   var out = {};
   [1, 2, 3].forEach(function (g) {
