@@ -695,3 +695,18 @@ body.pre-login .mileage-chip{ display:none; }
   .exam-bar{ padding:10px 12px; margin:16px -8px 0; }
   .exam-submit-btn{ min-width:96px; padding-left:14px; padding-right:14px; }
 }
+
+
+/* ============ 첫 로그인 환영 팝업 ============ */
+.welcome-panel{ max-width:480px; text-align:left; padding:26px 24px 24px; }
+.welcome-emoji{ font-size:40px; text-align:center; margin-bottom:4px; }
+.welcome-title{ font-size:19px; font-weight:900; text-align:center; margin:0 0 4px; }
+.welcome-sub{ text-align:center; color:var(--text-dim); font-size:14px; margin:0 0 16px; }
+.welcome-list{ margin:0 0 14px; padding-left:22px; font-size:14.5px; line-height:1.65; }
+.welcome-list li{ margin-bottom:9px; padding-left:2px; }
+.welcome-list li::marker{ font-weight:800; color:var(--accent-text); }
+.welcome-list b{ color:var(--accent-text); }
+.welcome-prize{
+  background:var(--accent-dim); color:var(--accent-text); border-radius:var(--radius-sm);
+  padding:11px 13px; font-size:13.5px; font-weight:700; line-height:1.6; margin-bottom:16px;
+}

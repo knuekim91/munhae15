@@ -238,8 +238,77 @@ async function submitNewPassword(oldPassword){
     return;
   }
 
-  document.body.classList.remove("pre-login");
-  startApp();
+  showWelcomePopup(() => {
+    document.body.classList.remove("pre-login");
+    startApp();
+  });
+}
+
+/* ============================================================
+   첫 로그인 환영 팝업 — 새 비밀번호를 정한 직후 한 번, "숙지했어요"를 눌러야 메인 화면으로 들어간다.
+   프로필 메뉴의 "시작 안내 다시 보기"로 언제든 다시 볼 수 있다.
+   ============================================================ */
+const WELCOME_ITEMS = [
+  { lead: "하루 15분, 새 학습은 하루 1개!", text: "이미 끝낸 학습의 복습은 몇 번이든 괜찮아요." },
+  { lead: "학습지와 함께 풀어요.", text: "학습지가 없으면 왼쪽 메뉴의 \"전체 학습지\"를 눌러요." },
+  { lead: "확인 문제 Q1~Q3를 모두 풀어야", text: "\"학습 완료\" 버튼이 눌려요." },
+  { lead: "아침 08:30~08:45에 월~금 5일 모두 완료하면", text: "금요일 \"행운의 7명\" 추첨 자격이 생겨요. 칭찬카드 7매가 주인을 기다리고 있어요!" },
+  { lead: "휴대폰으로만 끝내지 마세요!", text: "제본된 문해력 활동지를 정성스럽게 작성하고, 담임 선생님의 확인도장을 모아 보세요. 학기말에 푸짐한 상품이 제공돼요." },
+  { lead: "비밀번호는 나만 알기!", text: "잊어버렸다면 담임 선생님께 말씀드려요." },
+];
+
+function showWelcomePopup(onDone){
+  const old = document.getElementById("welcomeOverlay");
+  if(old) old.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "welcomeOverlay";
+  overlay.className = "modal-overlay";
+  overlay.style.zIndex = 95;
+  const panel = document.createElement("div");
+  panel.className = "modal-panel welcome-panel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+
+  const emoji = document.createElement("div");
+  emoji.className = "welcome-emoji";
+  emoji.textContent = "🎉";
+  const title = document.createElement("h2");
+  title.className = "welcome-title";
+  title.textContent = "문해력 15분에 오신 걸 환영해요!";
+  const sub = document.createElement("p");
+  sub.className = "welcome-sub";
+  sub.textContent = "시작하기 전에 이것만은 꼭 기억해요.";
+  panel.append(emoji, title, sub);
+
+  const list = document.createElement("ol");
+  list.className = "welcome-list";
+  WELCOME_ITEMS.forEach(it => {
+    const li = document.createElement("li");
+    const lead = document.createElement("b");
+    lead.textContent = it.lead;
+    li.append(lead, document.createTextNode(" " + it.text));
+    list.appendChild(li);
+  });
+  panel.appendChild(list);
+
+  const prize = document.createElement("div");
+  prize.className = "welcome-prize";
+  prize.textContent = "열심히 공부해서 중간·기말시험까지 도전! 시험을 통해서도 푸짐한 상품이 기다리고 있어요.";
+  panel.appendChild(prize);
+
+  const btn = document.createElement("button");
+  btn.className = "btn btn-primary login-btn";
+  btn.type = "button";
+  btn.textContent = "숙지했어요";
+  btn.addEventListener("click", () => {
+    overlay.remove();
+    if(typeof onDone === "function") onDone();
+  });
+  panel.appendChild(btn);
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  btn.focus();
 }
 
 function renderProfileChip(){
@@ -273,8 +342,14 @@ function toggleProfileMenu(chip, student, label){
   menu.className = "profile-menu";
   menu.innerHTML = `
     <div class="profile-menu-info">${label}${student.name ? " · " + student.name : ""}</div>
+    <button class="profile-menu-btn" id="welcomeAgainBtn">시작 안내 다시 보기</button>
     <button class="profile-menu-btn" id="switchStudentBtn">다른 학생으로 전환</button>`;
   chip.appendChild(menu);
+  document.getElementById("welcomeAgainBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu.remove();
+    showWelcomePopup();
+  });
   document.getElementById("switchStudentBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     clearStudent();
