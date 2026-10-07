@@ -13,7 +13,6 @@ var DAILY_START = "08:30:00";    // 이 시각 이후에 완료해야 그날 인
 var DAILY_CUTOFF = "08:45:00";   // 이 시각까지 완료해야 그날 인정
 var WINNER_COUNT = 7;
 
-var TEST_CLASSES = [9];   // 테스트 반(예: 1학년 9반 경북 학생)은 접속 집계·시험 통계에서 뺀다
 var ACCESS_LOG_SHEET_NAME = "접속로그";
 var ACCESS_LOG_HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름"];
 
@@ -436,7 +435,7 @@ function logAccess_(id, grade, cls, number, name) {
 }
 
 /**
- * 특정 날짜(기본: 오늘, KST, yyyy-MM-dd)의 접속 기록 요약을 구한다(테스트 반 제외).
+ * 특정 날짜(기본: 오늘, KST, yyyy-MM-dd)의 접속 기록 요약을 구한다.
  * byGrade: 그날 학년별 순 접속 학생 수. cumulativeUniqueCount: 누적(전체 기간) 순 접속 학생 수.
  */
 function getDailyAccessSummary_(dateStr) {
@@ -448,7 +447,6 @@ function getDailyAccessSummary_(dateStr) {
   var allUniqueIds = {};
   for (var i = 1; i < values.length; i++) {
     var row = values[i];
-    if (TEST_CLASSES.indexOf(Number(row[3])) >= 0) continue;   // 테스트 반은 집계하지 않음
     var sid = String(row[1]);
     allUniqueIds[sid] = true;
 
@@ -1124,7 +1122,7 @@ function finalizeExamDrafts_(examId) {
    ========================================================================= */
 
 var EXAM_STAT_TAB_NAMES = { mid1: "통계_1학기중간", final1: "통계_1학기기말", mid2: "통계_2학기중간", final2: "통계_2학기기말" };
-var EXAM_STAT_EXCLUDE_CLASSES = TEST_CLASSES;
+var EXAM_STAT_EXCLUDE_CLASSES = [9];   // 테스트 반(예: 1학년 9반)은 시험 반별 통계 표에서만 뺀다(접속 인원 집계에는 포함)
 var EXAM_STAT_HEADER = ["반", "재적", "응시", "미응시", "객관식", "단답형", "서술형", "총점", "평균(재적 기준)", "석차", "응시자 평균(참고)", "서술 확인필요(건)"];
 
 function 시험통계시트만들기() {
