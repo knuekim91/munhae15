@@ -616,7 +616,7 @@ var EXAM_CONFIG_HEADER = ["시험ID", "시험이름", "시작(KST)", "종료(KST
 var EXAM_ITEM_SHEET_NAME = "시험문항";
 var EXAM_ITEM_HEADER = ["시험ID", "번호", "유형", "제시", "문제", "지문", "보기1", "보기2", "보기3", "보기4", "보기5", "정답", "배점", "해설", "모범답안"];
 var EXAM_RESULT_SHEET_NAME = "시험응시";
-var EXAM_RESULT_HEADER = ["시험ID", "학번코드", "학년", "반", "번호", "이름", "상태", "제출시각", "객관식점수", "단답점수", "서술점수(자동)", "서술상태", "서술점수(교사확정)", "총점", "서술답안", "답안JSON"];
+var EXAM_RESULT_HEADER = ["시험ID", "학번코드", "학년", "반", "번호", "이름", "상태", "제출시각", "객관식점수", "단답점수", "서술점수(자동)", "서술상태", "서술점수(교사확정)", "총점", "서술답안", "답안JSON", "서술점수(최종)"];
 var EXAM_SUBMIT_GRACE_MS = 120 * 1000;
 var EXAM_DRAFT_TTL_SEC = 21600;
 var EXAM_ITEM_CACHE_SEC = 300;
@@ -993,6 +993,7 @@ function recordExamSubmission_(cfg, items, student, rawAnswers, submitStatus) {
     ]);
     var r = rs.getLastRow();
     rs.getRange(r, 14).setFormula("=I" + r + "+J" + r + "+IF(M" + r + "<>\"\",M" + r + ",K" + r + ")");
+    rs.getRange(r, 17).setFormula("=IF(M" + r + "<>\"\",M" + r + ",K" + r + ")");
     CacheService.getScriptCache().remove(draftKey_(cfg.id, student.id));
     return buildExamResult_(cfg, items, answers, { status: submitStatus, submittedAt: now, teacherEssay: null });
   } finally {
@@ -1110,4 +1111,135 @@ function finalizeExamDrafts_(examId) {
       recordExamSubmission_(cfg, items, examStudentInfo_(id), JSON.parse(raw).answers, "자동제출");
     });
   }
+}
+
+/* =========================================================================
+   반별 성적 통계 — 시험마다 탭 하나("통계_1학기중간" 등), 학년별(1~3학년) 표
+   - 모든 칸이 시트 수식이라서, "시험응시" 탭의 점수(예: 서술점수(교사확정))를 고치면 자동으로 다시 계산됩니다.
+   - 평균은 "재적 인원(명렬 기준)"으로 나눕니다. 미응시자는 0점으로 들어가므로 미응시자가 적은 반이 유리합니다.
+   - 석차는 학년 안에서 평균이 높은 순서(동점이면 같은 석차)입니다.
+   편집기에서 시험통계시트만들기()를 실행하면 만들어집니다(명렬이 바뀌었을 때 다시 실행해도 됩니다).
+   ========================================================================= */
+
+var EXAM_STAT_TAB_NAMES = { mid1: "통계_1학기중간", final1: "통계_1학기기말", mid2: "통계_2학기중간", final2: "통계_2학기기말" };
+var EXAM_STAT_HEADER = ["반", "재적", "응시", "미응시", "객관식", "단답형", "서술형", "총점", "평균(재적 기준)", "석차", "응시자 평균(참고)", "서술 확인필요(건)"];
+
+function 시험통계시트만들기() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureExamResultFinalColumn_();
+  var classes = getRosterClassesByGrade_();
+  var cfg = getExamConfigSheet_().getDataRange().getValues();
+  for (var i = 1; i < cfg.length; i++) {
+    if (!cfg[i][0]) continue;
+    buildExamStatSheet_(ss, String(cfg[i][0]), String(cfg[i][1] || cfg[i][0]), classes);
+  }
+}
+
+/** 이미 만들어진 "시험응시" 탭에도 17번째 열(서술점수(최종))을 채워 넣는다. */
+function ensureExamResultFinalColumn_() {
+  var sheet = getExamResultSheet_();
+  sheet.getRange(1, 17).setValue("서술점수(최종)");
+  var last = sheet.getLastRow();
+  if (last < 2) return;
+  var formulas = [];
+  for (var r = 2; r <= last; r++) formulas.push(["=IF(M" + r + "<>\"\",M" + r + ",K" + r + ")"]);
+  sheet.getRange(2, 17, last - 1, 1).setFormulas(formulas);
+}
+
+/** 명렬에서 학년별로 실제 있는 반 번호 목록을 구한다. 명렬이 비어 있으면 1~8반으로 가정. */
+function getRosterClassesByGrade_() {
+  var values = getRosterSheet_().getDataRange().getValues();
+  var seen = { 1: {}, 2: {}, 3: {} };
+  for (var i = 1; i < values.length; i++) {
+    var g = Number(values[i][0]), c = Number(values[i][1]);
+    if (seen[g] && c >= 1) seen[g][c] = true;
+  }
+  var out = {};
+  [1, 2, 3].forEach(function (g) {
+    var list = Object.keys(seen[g]).map(Number).sort(function (a, b) { return a - b; });
+    if (!list.length) list = [1, 2, 3, 4, 5, 6, 7, 8];
+    out[g] = list;
+  });
+  return out;
+}
+
+function buildExamStatSheet_(ss, examId, examName, classesByGrade) {
+  var tab = EXAM_STAT_TAB_NAMES[examId] || ("통계_" + examId);
+  var sheet = ss.getSheetByName(tab) || ss.insertSheet(tab);
+  sheet.clear();
+
+  var cols = EXAM_STAT_HEADER.length;
+  var rows = [];
+  var titleRows = [], headerRows = [], totalRows = [], avgRanges = [];
+  function pad(arr) { while (arr.length < cols) arr.push(""); return arr; }
+
+  rows.push(pad([examName + " 반별 성적 통계"]));
+  rows.push(pad(["시험ID", examId, "", "평균은 재적 인원(명렬 기준)으로 나눕니다. 미응시자는 0점이라 미응시자가 적은 반이 유리해요. 서술형은 교사확정 점수가 있으면 그 점수, 없으면 자동 채점 점수예요."]));
+  rows.push(pad([]));
+
+  var X = "'시험응시'!", R = "'명렬'!";
+  [1, 2, 3].forEach(function (g) {
+    var list = classesByGrade[g];
+    rows.push(pad([g + "학년"]));
+    titleRows.push(rows.length);
+    rows.push(EXAM_STAT_HEADER.slice());
+    headerRows.push(rows.length);
+
+    var first = rows.length + 1;
+    var last = first + list.length - 1;
+    list.forEach(function (c) {
+      var r = rows.length + 1;
+      var crit = X + "$A:$A,$B$2," + X + "$C:$C," + g + "," + X + "$D:$D," + c;
+      rows.push([
+        c + "반",
+        "=COUNTIFS(" + R + "$A:$A," + g + "," + R + "$B:$B," + c + ")",
+        "=COUNTIFS(" + crit + ")",
+        "=B" + r + "-C" + r,
+        "=SUMIFS(" + X + "$I:$I," + crit + ")",
+        "=SUMIFS(" + X + "$J:$J," + crit + ")",
+        "=SUMIFS(" + X + "$Q:$Q," + crit + ")",
+        "=E" + r + "+F" + r + "+G" + r,
+        "=IF(B" + r + "=0,\"\",H" + r + "/B" + r + ")",
+        "=IF(I" + r + "=\"\",\"\",RANK(I" + r + ",I$" + first + ":I$" + last + "))",
+        "=IF(C" + r + "=0,\"\",H" + r + "/C" + r + ")",
+        "=COUNTIFS(" + crit + "," + X + "$L:$L,\"확인필요\"," + X + "$M:$M,\"\")"
+      ]);
+    });
+
+    var t = rows.length + 1;
+    var total = ["학년 전체"];
+    ["B", "C", "D", "E", "F", "G", "H"].forEach(function (col) {
+      total.push("=SUM(" + col + first + ":" + col + last + ")");
+    });
+    total.push("=IF(B" + t + "=0,\"\",H" + t + "/B" + t + ")");
+    total.push("");
+    total.push("=IF(C" + t + "=0,\"\",H" + t + "/C" + t + ")");
+    total.push("=SUM(L" + first + ":L" + last + ")");
+    rows.push(total);
+    totalRows.push(t);
+    avgRanges.push([first, t]);
+    rows.push(pad([]));
+  });
+
+  sheet.getRange(1, 1, rows.length, cols).setValues(rows);
+
+  // 보기 좋게 꾸미기
+  sheet.getRange(1, 1).setFontSize(15).setFontWeight("bold");
+  sheet.getRange(2, 4).setFontColor("#6b6f85");
+  titleRows.forEach(function (r) { sheet.getRange(r, 1).setFontSize(13).setFontWeight("bold"); });
+  headerRows.forEach(function (r) {
+    sheet.getRange(r, 1, 1, cols).setBackground("#e8eaff").setFontWeight("bold").setHorizontalAlignment("center");
+  });
+  totalRows.forEach(function (r) {
+    sheet.getRange(r, 1, 1, cols).setBackground("#f5f6fb").setFontWeight("bold");
+  });
+  avgRanges.forEach(function (rg) {
+    var n = rg[1] - rg[0] + 1;
+    sheet.getRange(rg[0], 9, n, 1).setNumberFormat("0.00");
+    sheet.getRange(rg[0], 11, n, 1).setNumberFormat("0.00");
+    sheet.getRange(rg[0], 2, n, cols - 1).setHorizontalAlignment("center");
+  });
+  sheet.setColumnWidth(1, 90);
+  for (var c = 2; c <= cols; c++) sheet.setColumnWidth(c, 96);
+  sheet.setFrozenRows(2);
 }
