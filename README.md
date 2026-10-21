@@ -154,7 +154,8 @@ gas/Code.gs               구글 시트 쪽에 붙여넣는 Apps Script 코드
 
 학생이 로그인할 때마다 "접속로그" 시트에 기록이 쌓입니다. `?dailySummary=1` 파라미터로
 이 웹앱에 GET 요청을 보내면 그 시점까지의 접속 현황을 JSON으로 돌려줍니다.
-`byGrade`는 그날 학년별 순 접속 학생 수, `cumulativeUniqueCount`는 서비스 시작 이후
+`byGrade`는 그날 학년별 순 접속 학생 수, `byClass`는 학년별·반별 순 접속 학생 수(명렬에 있는 반은 0명도 포함,
+테스트 반은 접속이 있을 때만 포함), `cumulativeUniqueCount`는 서비스 시작 이후
 한 번이라도 접속한 전체 누적 학생 수입니다.
 
 ```
@@ -162,6 +163,7 @@ GET <웹앱주소>?dailySummary=1
 → {"status":"ok","summary":{
      "date":"2026-10-05","uniqueCount":212,"totalCount":231,
      "byGrade":{"1":70,"2":75,"3":67},
+     "byClass":{"1":{"1":9,"2":8,"3":10},"2":{"1":12,"2":11},"3":{"1":7,"2":6}},
      "cumulativeUniqueCount":540
    }}
 ```

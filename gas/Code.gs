@@ -436,7 +436,8 @@ function logAccess_(id, grade, cls, number, name) {
 
 /**
  * 특정 날짜(기본: 오늘, KST, yyyy-MM-dd)의 접속 기록 요약을 구한다.
- * byGrade: 그날 학년별 순 접속 학생 수. cumulativeUniqueCount: 누적(전체 기간) 순 접속 학생 수.
+ * byGrade: 그날 학년별 순 접속 학생 수. byClass: 학년 -> {반: 순 접속 학생 수} (명렬에 있는 반은 0명도 포함,
+ * 테스트 반은 접속이 있을 때만 포함). cumulativeUniqueCount: 누적(전체 기간) 순 접속 학생 수.
  */
 function getDailyAccessSummary_(dateStr) {
   var targetDate = dateStr || Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
@@ -444,6 +445,7 @@ function getDailyAccessSummary_(dateStr) {
   var uniqueIds = {};
   var total = 0;
   var byGrade = {};
+  var byClass = {};
   var allUniqueIds = {};
   for (var i = 1; i < values.length; i++) {
     var row = values[i];
@@ -456,17 +458,36 @@ function getDailyAccessSummary_(dateStr) {
     uniqueIds[sid] = true;
 
     var grade = String(row[2]);
+    var cls = String(Number(row[3]));
     if (!byGrade[grade]) byGrade[grade] = {};
     byGrade[grade][sid] = true;
+    if (!byClass[grade]) byClass[grade] = {};
+    if (!byClass[grade][cls]) byClass[grade][cls] = {};
+    byClass[grade][cls][sid] = true;
   }
   var byGradeCounts = {};
   for (var g in byGrade) byGradeCounts[g] = Object.keys(byGrade[g]).length;
+
+  var rosterClasses = getRosterClassesByGrade_();
+  var byClassCounts = {};
+  [1, 2, 3].forEach(function (gr) {
+    var key = String(gr);
+    var classes = {};
+    rosterClasses[gr].forEach(function (c) { classes[String(c)] = true; });
+    Object.keys(byClass[key] || {}).forEach(function (c) { classes[c] = true; });
+    var out = {};
+    Object.keys(classes).map(Number).sort(function (a, b) { return a - b; }).forEach(function (c) {
+      out[String(c)] = byClass[key] && byClass[key][String(c)] ? Object.keys(byClass[key][String(c)]).length : 0;
+    });
+    byClassCounts[key] = out;
+  });
 
   return {
     date: targetDate,
     uniqueCount: Object.keys(uniqueIds).length,
     totalCount: total,
     byGrade: byGradeCounts,
+    byClass: byClassCounts,
     cumulativeUniqueCount: Object.keys(allUniqueIds).length
   };
 }
