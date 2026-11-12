@@ -101,7 +101,7 @@ function masterEscHandler(e){ if(e.key === "Escape") closeMasterDashboard(); }
 
 function openMasterDashboard(cred, data){
   closeMasterDashboard();
-  MASTER = { cred, data, view: { grade: 0, cls: "", filter: "all", away: 3, q: "" } };
+  MASTER = { cred, data, page: "attendance", view: { grade: 0, cls: "", filter: "all", away: 3, q: "" } };
 
   const el = document.createElement("div");
   el.id = "masterOverlay";
@@ -109,36 +109,51 @@ function openMasterDashboard(cred, data){
   el.innerHTML = `
     <div class="master-wrap">
       <div class="master-head">
-        <div class="master-title">🛡️ 마스터 · 전교 출결 현황</div>
+        <div class="master-title">🛡️ 마스터</div>
         <div class="master-tools">
-          <input id="masterDate" class="master-date" type="date" aria-label="기준 날짜">
-          <button class="btn btn-ghost master-btn" id="masterTodayBtn" type="button">오늘</button>
-          <button class="btn btn-ghost master-btn" id="masterRefreshBtn" type="button">새로고침</button>
-          <button class="btn btn-ghost master-btn" id="masterCsvBtn" type="button" title="지금 화면에 보이는 명단(없으면 전교 학생)을 엑셀용 파일로 저장해요">CSV 내려받기</button>
+          <div class="master-att-tools" id="masterAttTools">
+            <input id="masterDate" class="master-date" type="date" aria-label="기준 날짜">
+            <button class="btn btn-ghost master-btn" id="masterTodayBtn" type="button">오늘</button>
+            <button class="btn btn-ghost master-btn" id="masterRefreshBtn" type="button">새로고침</button>
+            <button class="btn btn-ghost master-btn" id="masterCsvBtn" type="button" title="지금 화면에 보이는 명단(없으면 전교 학생)을 엑셀용 파일로 저장해요">CSV 내려받기</button>
+          </div>
           <button class="icon-btn" id="masterCloseBtn" type="button" aria-label="닫기">✕</button>
         </div>
       </div>
-      <p class="master-note" id="masterNote"></p>
-      <div id="masterSummary" class="master-summary"></div>
-      <div id="masterGradeChips" class="master-chips"></div>
-      <div class="master-section-title">반별 현황 <span class="master-hint">반을 누르면 학생 명단이 나와요</span></div>
-      <div class="score-table-wrap"><table class="score-table master-table" id="masterClassTable"></table></div>
-      <div class="master-section-title" id="masterStudentTitle">학생 명단</div>
-      <div class="master-controls">
-        <select id="masterFilter" class="master-select" aria-label="보기 조건">
-          <option value="all">전체 학생</option>
-          <option value="missing">오늘 미완료(접속만+미접속)</option>
-          <option value="none">오늘 미접속만</option>
-          <option value="away">오래 미활동</option>
-        </select>
-        <select id="masterAway" class="master-select" aria-label="미활동 일수" hidden>
-          <option value="3">3일 이상</option><option value="5">5일 이상</option>
-          <option value="7">7일 이상</option><option value="14">14일 이상</option>
-        </select>
-        <input id="masterSearch" class="master-search" type="search" placeholder="이름 또는 학번 검색" autocomplete="off">
+      <div class="master-layout">
+        <nav class="master-side" id="masterSide" aria-label="마스터 메뉴">
+          <button type="button" class="master-nav-item" data-page="attendance">📋 출결 현황</button>
+          <div class="master-nav-group">📝 정기고사</div>
+          ${MASTER_EXAM_MENU.map(x => `<button type="button" class="master-nav-item master-nav-sub" data-page="exam:${x.id}">${x.label}</button>`).join("")}
+        </nav>
+        <main class="master-main">
+          <div id="masterPageAttendance">
+            <h2 class="master-page-title">출결 현황</h2>
+            <p class="master-note" id="masterNote"></p>
+            <div id="masterSummary" class="master-summary"></div>
+            <div id="masterGradeChips" class="master-chips"></div>
+            <div class="master-section-title">반별 현황 <span class="master-hint">반을 누르면 학생 명단이 나와요</span></div>
+            <div class="score-table-wrap"><table class="score-table master-table" id="masterClassTable"></table></div>
+            <div class="master-section-title" id="masterStudentTitle">학생 명단</div>
+            <div class="master-controls">
+              <select id="masterFilter" class="master-select" aria-label="보기 조건">
+                <option value="all">전체 학생</option>
+                <option value="missing">오늘 미완료(접속만+미접속)</option>
+                <option value="none">오늘 미접속만</option>
+                <option value="away">오래 미활동</option>
+              </select>
+              <select id="masterAway" class="master-select" aria-label="미활동 일수" hidden>
+                <option value="3">3일 이상</option><option value="5">5일 이상</option>
+                <option value="7">7일 이상</option><option value="14">14일 이상</option>
+              </select>
+              <input id="masterSearch" class="master-search" type="search" placeholder="이름 또는 학번 검색" autocomplete="off">
+            </div>
+            <div class="score-table-wrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
+            <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(행운의 7명 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
+          </div>
+          <div id="masterPageExam" hidden></div>
+        </main>
       </div>
-      <div class="score-table-wrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
-      <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(행운의 7명 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
     </div>`;
   document.body.appendChild(el);
   document.body.style.overflow = "hidden";
@@ -157,7 +172,42 @@ function openMasterDashboard(cred, data){
   document.getElementById("masterAway").addEventListener("change", e => { MASTER.view.away = Number(e.target.value); renderMasterStudents(); });
   document.getElementById("masterSearch").addEventListener("input", e => { MASTER.view.q = e.target.value.trim(); renderMasterStudents(); });
 
+  document.querySelectorAll("#masterSide .master-nav-item").forEach(b => b.addEventListener("click", () => masterShowPage(b.dataset.page)));
+  masterShowPage("attendance");
   renderMasterAll();
+}
+
+/* ---------------- 왼쪽 메뉴 ---------------- */
+const MASTER_EXAM_MENU = [
+  { id: "mid1", label: "1학기 중간", term: "1학기", name: "중간시험", tab: "1학기중간" },
+  { id: "final1", label: "1학기 기말", term: "1학기", name: "기말시험", tab: "1학기기말" },
+  { id: "mid2", label: "2학기 중간", term: "2학기", name: "중간시험", tab: "2학기중간" },
+  { id: "final2", label: "2학기 기말", term: "2학기", name: "기말시험", tab: "2학기기말" },
+];
+
+function masterShowPage(key){
+  if(!MASTER) return;
+  MASTER.page = key;
+  document.querySelectorAll("#masterSide .master-nav-item").forEach(b => b.classList.toggle("active", b.dataset.page === key));
+  const isAtt = key === "attendance";
+  document.getElementById("masterPageAttendance").hidden = !isAtt;
+  document.getElementById("masterAttTools").classList.toggle("is-off", !isAtt);
+  const exam = document.getElementById("masterPageExam");
+  exam.hidden = isAtt;
+  if(!isAtt){
+    const item = MASTER_EXAM_MENU.find(x => `exam:${x.id}` === key);
+    const label = item ? `${item.term} ${item.name}` : "정기고사";
+    exam.innerHTML = `
+      <h2 class="master-page-title">정기고사 · ${masterEsc(label)}</h2>
+      <div class="master-soon">
+        <div class="master-soon-emoji">🚧</div>
+        <div class="master-soon-title">준비 중이에요</div>
+        <p>${masterEsc(label)}의 반별 응시 현황과 성적을 이곳에서 볼 수 있도록 만들 예정이에요.<br>
+        지금은 구글 시트의 <b>통계_${masterEsc(item ? item.tab : "")}</b> 탭에서 확인할 수 있어요.</p>
+      </div>`;
+  }
+  const main = document.querySelector(".master-main");
+  if(main) main.scrollIntoView({ block: "start" });
 }
 
 async function masterReload(date){

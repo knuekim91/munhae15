@@ -770,3 +770,36 @@ body.pre-login .mileage-chip{ display:none; }
   .master-summary{ grid-template-columns:repeat(2,1fr); }
   .master-title{ font-size:17px; }
 }
+
+
+/* 마스터 왼쪽 메뉴 */
+.master-layout{ display:grid; grid-template-columns:190px minmax(0,1fr); gap:22px; align-items:start; }
+.master-side{
+  position:sticky; top:12px; display:flex; flex-direction:column; gap:2px;
+  background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px;
+}
+.master-nav-item{
+  display:block; width:100%; text-align:left; border:none; background:none; font-family:inherit; cursor:pointer;
+  padding:10px 12px; border-radius:var(--radius-sm); font-size:14px; font-weight:700; color:var(--text-dim);
+}
+.master-nav-item:hover{ background:var(--bg-soft); color:var(--text); }
+.master-nav-item.active{ background:var(--accent-dim); color:var(--accent-text); }
+.master-nav-group{ margin:12px 12px 4px; font-size:12px; font-weight:800; color:var(--text-faint); letter-spacing:.02em; }
+.master-nav-sub{ padding-left:26px; font-weight:600; font-size:13.5px; }
+.master-main{ min-width:0; }
+.master-page-title{ font-size:18px; font-weight:900; margin:0 0 6px; }
+.master-att-tools{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.master-att-tools.is-off{ display:none; }
+.master-soon{ background:var(--bg-elevated); border:1px dashed var(--border); border-radius:var(--radius-md); padding:44px 20px; text-align:center; margin-top:14px; }
+.master-soon-emoji{ font-size:38px; margin-bottom:6px; }
+.master-soon-title{ font-size:16px; font-weight:900; margin-bottom:8px; }
+.master-soon p{ color:var(--text-dim); font-size:14px; line-height:1.8; margin:0; }
+@media (max-width:760px){
+  .master-head{ position:relative; padding-right:44px; }
+  #masterCloseBtn{ position:absolute; top:0; right:0; }
+  .master-layout{ grid-template-columns:1fr; gap:12px; }
+  .master-side{ position:static; flex-direction:row; flex-wrap:wrap; gap:6px; padding:8px; }
+  .master-nav-group{ display:none; }
+  .master-nav-item{ width:auto; padding:8px 12px; }
+  .master-nav-sub{ padding-left:12px; }
+}
