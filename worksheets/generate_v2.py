@@ -591,8 +591,14 @@ def convert_pdfs(docx_paths):
                 retry(lambda: doc.SaveAs2(os.path.abspath(pdf), 17))                       # 17 = PDF
             finally:
                 retry(lambda: doc.Close(False))
+            # Word가 글꼴을 통째로 넣어 한 장이 4MB가 되므로, 쓰인 글자만 남기는 서브셋으로 줄인다(약 0.13MB)
+            slim = pdf + ".tmp"
             with pymupdf.open(pdf) as pd:
-                results[os.path.basename(pdf)] = pd.page_count
+                pages = pd.page_count
+                pd.subset_fonts()
+                pd.save(slim, garbage=4, deflate=True, clean=True)
+            os.replace(slim, pdf)
+            results[os.path.basename(pdf)] = pages
     finally:
         try:
             retry(lambda: word.Quit())
