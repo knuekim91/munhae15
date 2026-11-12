@@ -56,9 +56,11 @@ function openAdminAuthModal(){
       </label>
       <div id="adminAuthError" class="login-error" hidden></div>
       <button id="adminAuthBtn" class="btn btn-primary login-btn">확인</button>
+      <button id="adminMasterLink" class="login-admin-link" type="button">🛡️ 마스터(전교 출결 보기)로 들어가기</button>
     </div>`;
 
   document.getElementById("closeAdminModalBtn").addEventListener("click", closeAdminModal);
+  document.getElementById("adminMasterLink").addEventListener("click", openMasterAuthModal);
   const submit = () => submitAdminAuth();
   document.getElementById("adminAuthBtn").addEventListener("click", submit);
   // 학년 1자리 입력 → 반으로, 반 1자리 입력 → 비밀번호로 자동 이동

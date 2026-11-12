@@ -26,6 +26,7 @@ function doPost(e) {
       case "adminStatus": result = handleAdminStatus_(data); break;
       case "adminReset": result = handleAdminReset_(data); break;
       case "adminTeachers": result = handleAdminTeachers_(data); break;
+      case "masterDashboard": result = handleMasterDashboard_(data); break;
       case "examStart": result = handleExamStart_(data); break;
       case "examSave": result = handleExamSave_(data); break;
       case "examSubmit": result = handleExamSubmit_(data); break;
@@ -301,8 +302,14 @@ function hashPassword_(studentId, password) {
  * 절대 적지 마세요.
  */
 function checkAdminPassword_(password) {
-  var stored = PropertiesService.getScriptProperties().getProperty("ADMIN_PASSWORD");
-  return !!stored && String(password) === stored;
+  if (authLocked_("admin")) return false;
+  var props = PropertiesService.getScriptProperties();
+  var stored = props.getProperty("ADMIN_PASSWORD");
+  var master = props.getProperty("MASTER_PASSWORD");
+  var p = String(password === undefined || password === null ? "" : password);
+  var ok = (!!stored && p === stored) || (!!master && p === master);
+  if (ok) authOk_("admin"); else authFailed_("admin");
+  return ok;
 }
 
 function getRosterSheet_() {
@@ -1264,4 +1271,171 @@ function buildExamStatSheet_(ss, examId, examName, classesByGrade) {
   sheet.setColumnWidth(1, 90);
   for (var c = 2; c <= cols; c++) sheet.setColumnWidth(c, 96);
   sheet.setFrozenRows(2);
+}
+
+
+/* =========================================================================
+   마스터(admin) 권한 — 전교 출결 대시보드
+   - 마스터 ID는 스크립트 속성 MASTER_ID(없으면 "admin"), 비밀번호는 MASTER_PASSWORD 속성에만 저장합니다.
+     (이 파일은 공개 저장소에 올라가므로 비밀번호를 여기에 적지 마세요.)
+   - 마스터 비밀번호는 기존 "관리자 설정"(학생 비밀번호 초기화 등)에서도 관리자 비밀번호로 통한다.
+   - 비밀번호를 5번 틀리면 10분 동안 잠겨 무차별 대입을 막는다(마스터와 일반 관리자는 따로 센다).
+   - "출결"은 그날 학습을 완료(기록 시트에 완료 기록이 남음)했는지로 본다. 접속만 하고 완료하지 않은 학생은
+     "접속만", 접속도 완료도 없으면 "미접속"으로 구분한다.
+   ========================================================================= */
+
+var AUTH_FAIL_LIMIT = 5;
+var AUTH_LOCK_SEC = 600;
+var MASTER_ID_DEFAULT = "admin";
+
+function authLocked_(scope) {
+  return Number(CacheService.getScriptCache().get("authfail:" + scope) || 0) >= AUTH_FAIL_LIMIT;
+}
+function authFailed_(scope) {
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get("authfail:" + scope) || 0) + 1;
+  cache.put("authfail:" + scope, String(n), AUTH_LOCK_SEC);
+}
+function authOk_(scope) {
+  CacheService.getScriptCache().remove("authfail:" + scope);
+}
+
+function checkMaster_(data) {
+  var props = PropertiesService.getScriptProperties();
+  var pw = props.getProperty("MASTER_PASSWORD");
+  if (!pw) return { ok: false, reason: "not_configured" };
+  if (authLocked_("master")) return { ok: false, reason: "locked" };
+  var id = String(props.getProperty("MASTER_ID") || MASTER_ID_DEFAULT).trim().toLowerCase();
+  var gotId = String(data.masterId === undefined || data.masterId === null ? "" : data.masterId).trim().toLowerCase();
+  var gotPw = String(data.masterPassword === undefined || data.masterPassword === null ? "" : data.masterPassword);
+  if (gotId === id && gotPw === pw) {
+    authOk_("master");
+    return { ok: true };
+  }
+  authFailed_("master");
+  return { ok: false, reason: "auth" };
+}
+
+function ymdToUtcMs_(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+function utcMsToYmd_(ms) {
+  var d = new Date(ms);
+  return d.getUTCFullYear() + "-" + ("0" + (d.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + d.getUTCDate()).slice(-2);
+}
+/** 해당 날짜가 속한 주의 월~금(yyyy-MM-dd) 5일 */
+function weekDatesOf_(ymd) {
+  var ms = ymdToUtcMs_(ymd);
+  var monday = ms - ((new Date(ms).getUTCDay() + 6) % 7) * 86400000;
+  var out = [];
+  for (var i = 0; i < 5; i++) out.push(utcMsToYmd_(monday + i * 86400000));
+  return out;
+}
+
+function normTime_(t) {
+  var s = String(t || "");
+  return s.length < 8 ? "0" + s : s;
+}
+
+function handleMasterDashboard_(data) {
+  var auth = checkMaster_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+
+  var today = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+  var target = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || "")) ? String(data.date) : today;
+  var week = weekDatesOf_(target);
+  var weekSet = {};
+  week.forEach(function (d) { weekSet[d] = true; });
+
+  var rosterValues = getRosterSheet_().getDataRange().getValues();
+  var info = {};
+  var ids = [];
+  for (var r = 1; r < rosterValues.length; r++) {
+    var g = Number(rosterValues[r][0]), c = Number(rosterValues[r][1]), n = Number(rosterValues[r][2]);
+    if (!g || !c || !n) continue;
+    var id = studentId_(g, c, n);
+    if (info[id]) continue;
+    info[id] = { grade: g, cls: c, number: n, name: String(rosterValues[r][3] || ""),
+                 accessDays: {}, doneDays: {}, timeDays: {}, lastAccess: "", lastDone: "" };
+    ids.push(id);
+  }
+
+  var alog = getAccessLogSheet_();
+  var aLast = alog.getLastRow();
+  if (aLast >= 2) {
+    var av = alog.getRange(2, 1, aLast - 1, 2).getValues();
+    for (var i = 0; i < av.length; i++) {
+      var st = info[String(av[i][1])];
+      if (!st) continue;
+      var d = tsToDateAndTime_(av[i][0]).date;
+      if (d > target) continue;
+      if (d > st.lastAccess) st.lastAccess = d;
+      if (weekSet[d]) st.accessDays[d] = true;
+    }
+  }
+
+  var rec = getSheet_();
+  var rLast = rec.getLastRow();
+  if (rLast >= 2) {
+    var rv = rec.getRange(2, 1, rLast - 1, 2).getValues();
+    for (var j = 0; j < rv.length; j++) {
+      var st2 = info[String(rv[j][1])];
+      if (!st2) continue;
+      var dt = tsToDateAndTime_(rv[j][0]);
+      if (dt.date > target) continue;
+      if (dt.date > st2.lastDone) st2.lastDone = dt.date;
+      if (weekSet[dt.date]) {
+        st2.doneDays[dt.date] = true;
+        var t = normTime_(dt.time);
+        if (t >= DAILY_START && t <= DAILY_CUTOFF) st2.timeDays[dt.date] = true;
+      }
+    }
+  }
+
+  var targetMs = ymdToUtcMs_(target);
+  var students = [];
+  var classMap = {};
+  var school = { enrolled: 0, done: 0, access: 0, none: 0 };
+  var grades = {
+    "1": { enrolled: 0, done: 0, access: 0, none: 0 },
+    "2": { enrolled: 0, done: 0, access: 0, none: 0 },
+    "3": { enrolled: 0, done: 0, access: 0, none: 0 }
+  };
+
+  ids.forEach(function (sid) {
+    var s = info[sid];
+    var status = s.doneDays[target] ? "done" : (s.accessDays[target] ? "access" : "none");
+    var lastActive = s.lastDone > s.lastAccess ? s.lastDone : s.lastAccess;
+    var missDays = lastActive ? Math.max(0, Math.round((targetMs - ymdToUtcMs_(lastActive)) / 86400000)) : null;
+    var codes = week.map(function (wd) {
+      if (wd > target) return "F";
+      if (s.timeDays[wd]) return "T";
+      if (s.doneDays[wd]) return "D";
+      if (s.accessDays[wd]) return "A";
+      return "N";
+    });
+    var lucky = codes.filter(function (x) { return x === "T"; }).length;
+    var isTest = EXAM_STAT_EXCLUDE_CLASSES.indexOf(s.cls) >= 0;
+
+    students.push({ grade: s.grade, cls: s.cls, number: s.number, name: s.name, status: status,
+                    lastActive: lastActive, lastDone: s.lastDone, missDays: missDays, week: codes, lucky: lucky, test: isTest });
+
+    var key = s.grade + "-" + s.cls;
+    if (!classMap[key]) classMap[key] = { grade: s.grade, cls: s.cls, test: isTest, enrolled: 0, done: 0, access: 0, none: 0 };
+    classMap[key].enrolled++;
+    classMap[key][status]++;
+    if (!isTest) {
+      school.enrolled++;
+      school[status]++;
+      var gk = String(s.grade);
+      if (grades[gk]) { grades[gk].enrolled++; grades[gk][status]++; }
+    }
+  });
+
+  students.sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls || a.number - b.number; });
+  var classes = Object.keys(classMap).map(function (k) { return classMap[k]; })
+    .sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; });
+
+  return { status: "ok", date: target, today: today, weekDates: week, school: school, grades: grades, classes: classes, students: students };
 }

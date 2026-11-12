@@ -711,3 +711,61 @@ body.pre-login .mileage-chip{ display:none; }
   background:var(--accent-dim); color:var(--accent-text); border-radius:var(--radius-sm);
   padding:11px 13px; font-size:13.5px; font-weight:700; line-height:1.6; margin-bottom:16px;
 }
+
+
+/* ============ 마스터(admin) 전교 출결 대시보드 ============ */
+.master-overlay{ position:fixed; inset:0; z-index:100; background:var(--bg); overflow:auto; }
+.master-wrap{ max-width:1080px; margin:0 auto; padding:16px 16px 56px; }
+.master-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+.master-title{ font-size:20px; font-weight:900; }
+.master-tools{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.master-btn{ padding:8px 12px; font-size:13px; }
+.master-date, .master-select, .master-search{
+  border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; font-size:14px; font-family:inherit;
+  background:var(--bg-elevated); color:var(--text);
+}
+.master-date:focus, .master-select:focus, .master-search:focus{ outline:none; border-color:var(--accent); }
+.master-note{ color:var(--text-dim); font-size:13.5px; margin:0 0 14px; }
+.master-summary{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+.master-tile{ background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 12px; text-align:center; }
+.master-tile-num{ font-size:24px; font-weight:900; }
+.master-tile-label{ font-size:12.5px; font-weight:700; color:var(--text-dim); margin-top:2px; }
+.master-tile-sub{ font-size:12px; color:var(--text-faint); margin-top:2px; }
+.master-tile.is-done .master-tile-num{ color:var(--good); }
+.master-tile.is-access .master-tile-num{ color:#c98400; }
+.master-tile.is-none .master-tile-num{ color:var(--bad); }
+.master-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.master-chip{
+  border:1.5px solid var(--border); background:var(--bg-elevated); color:var(--text); border-radius:999px;
+  padding:7px 14px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+.master-chip span{ margin-left:6px; font-weight:600; color:var(--text-faint); font-size:12px; }
+.master-chip.active{ border-color:var(--accent); background:var(--accent-dim); color:var(--accent-text); }
+.master-section-title{ font-size:15px; font-weight:900; margin:22px 0 8px; }
+.master-hint{ font-size:12px; font-weight:600; color:var(--text-faint); margin-left:6px; }
+.master-table td, .master-table th{ text-align:center; white-space:nowrap; }
+.master-table td:first-child, .master-table th:first-child{ text-align:left; }
+.master-row{ cursor:pointer; }
+.master-row:hover td{ background:var(--bg-soft); }
+.master-row.active td{ background:var(--accent-dim); }
+.master-test{ font-size:10.5px; font-weight:800; background:var(--bg-soft); color:var(--text-faint); border-radius:5px; padding:1px 6px; margin-left:4px; }
+.t-done{ color:var(--good); font-weight:800; }
+.t-access{ color:#c98400; font-weight:800; }
+.t-none{ color:var(--bad); font-weight:800; }
+.master-bar{ display:inline-block; vertical-align:middle; width:74px; height:8px; border-radius:99px; background:var(--bg-soft); overflow:hidden; }
+.master-bar i{ display:block; height:100%; background:var(--good); }
+.master-pct{ display:inline-block; width:38px; text-align:right; font-size:12.5px; margin-left:6px; color:var(--text-dim); }
+.master-controls{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.master-search{ flex:1; min-width:150px; max-width:260px; }
+.master-badge{ font-size:12px; font-weight:800; padding:2px 9px; border-radius:6px; }
+.master-badge.b-done{ background:var(--good-bg); color:var(--good); }
+.master-badge.b-access{ background:rgba(242,165,65,.2); color:#b77700; }
+.master-badge.b-none{ background:var(--bad-bg); color:var(--bad); }
+.master-week{ letter-spacing:6px; font-size:14px; }
+.wk-T{ color:#c98400; } .wk-D{ color:var(--good); } .wk-A{ color:#c98400; opacity:.75; } .wk-N{ color:var(--text-faint); } .wk-F{ color:var(--text-faint); opacity:.55; }
+.master-empty{ color:var(--text-dim); padding:22px 10px !important; text-align:center !important; white-space:normal !important; }
+.master-legend{ margin-top:12px; font-size:12px; color:var(--text-faint); line-height:1.7; }
+@media (max-width:640px){
+  .master-summary{ grid-template-columns:repeat(2,1fr); }
+  .master-title{ font-size:17px; }
+}
