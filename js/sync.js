@@ -86,7 +86,7 @@ async function fetchScoreHistory(studentId){
   }
 }
 
-/** 가장 최근 금요일 "행운의 7명" 추첨 결과를 가져온다. 연동 안 됐거나 실패하면 null. */
+/** 가장 최근 금요일 "위클리 행운아" 추첨 결과를 가져온다. 연동 안 됐거나 실패하면 null. */
 async function fetchLatestWinners(){
   const url = endpointUrl();
   if(!url) return null;

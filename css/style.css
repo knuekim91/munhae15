@@ -811,3 +811,13 @@ body.pre-login .mileage-chip{ display:none; }
 .master-seg-btn.active{ background:var(--accent-dim); color:var(--accent-text); }
 .master-total td{ background:var(--bg-soft); font-weight:800; }
 td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent-text); }
+
+
+/* 위클리 행운아 표 */
+.master-lucky td, .master-lucky th{ min-width:84px; }
+.master-lucky td.lk-week{ text-align:left; font-weight:800; white-space:nowrap; }
+.master-lucky td.lk-week span{ display:block; font-size:11px; font-weight:600; color:var(--text-faint); }
+.master-lucky td.lk-win{ font-weight:800; color:var(--accent-text); }
+.master-lucky td.lk-x{ font-weight:800; color:var(--text-faint); }
+.master-lucky td.lk-none{ color:var(--text-faint); opacity:.5; }
+.master-lucky tr.master-latest td{ background:var(--accent-dim); }

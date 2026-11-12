@@ -124,6 +124,7 @@ function openMasterDashboard(cred, data){
         <nav class="master-side" id="masterSide" aria-label="마스터 메뉴">
           <button type="button" class="master-nav-item" data-page="attendance">📋 출결 현황</button>
           <button type="button" class="master-nav-item" data-page="period">📈 월별·학기별</button>
+          <button type="button" class="master-nav-item" data-page="lucky">🍀 위클리 행운아</button>
           <div class="master-nav-group">📝 정기고사</div>
           ${MASTER_EXAM_MENU.map(x => `<button type="button" class="master-nav-item master-nav-sub" data-page="exam:${x.id}">${x.label}</button>`).join("")}
         </nav>
@@ -150,7 +151,7 @@ function openMasterDashboard(cred, data){
               <input id="masterSearch" class="master-search" type="search" placeholder="이름 또는 학번 검색" autocomplete="off">
             </div>
             <div class="score-table-wrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
-            <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(행운의 7명 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
+            <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(위클리 행운아 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
           </div>
           <div id="masterPagePeriod" hidden>
             <h2 class="master-page-title">월별 · 학기별 통계</h2>
@@ -165,6 +166,18 @@ function openMasterDashboard(cred, data){
               <button class="btn btn-ghost master-btn" id="masterPeriodCsv" type="button">CSV 내려받기</button>
             </div>
             <div id="masterPeriodBody"></div>
+          </div>
+          <div id="masterPageLucky" hidden>
+            <h2 class="master-page-title">🍀 위클리 행운아</h2>
+            <p class="master-note">매주 금요일 아침, 그 주 월~금 5일을 모두 08:30~08:45 안에 완료한 학생 중 <b>반마다 1명</b>을 뽑아요.
+              자격자가 없는 반은 <b>X</b>로 표시하고, 같은 학생이 또 뽑히면 이름 옆에 횟수를 적어요(예: 김나은(3회) · 첫 번째는 표시하지 않아요).
+              주차는 추첨일(금요일)이 속한 달 기준이에요.</p>
+            <div class="master-controls">
+              <div class="master-chips" id="masterLuckyChips" style="margin:0"></div>
+              <button class="btn btn-ghost master-btn" id="masterLuckyRefresh" type="button">새로고침</button>
+              <button class="btn btn-ghost master-btn" id="masterLuckyCsv" type="button">CSV 내려받기</button>
+            </div>
+            <div id="masterLuckyBody"></div>
           </div>
           <div id="masterPageExam" hidden></div>
         </main>
@@ -206,13 +219,16 @@ function masterShowPage(key){
   document.querySelectorAll("#masterSide .master-nav-item").forEach(b => b.classList.toggle("active", b.dataset.page === key));
   const isAtt = key === "attendance";
   const isPeriod = key === "period";
-  const isExam = !isAtt && !isPeriod;
+  const isLucky = key === "lucky";
+  const isExam = !isAtt && !isPeriod && !isLucky;
   document.getElementById("masterPageAttendance").hidden = !isAtt;
   document.getElementById("masterPagePeriod").hidden = !isPeriod;
+  document.getElementById("masterPageLucky").hidden = !isLucky;
   document.getElementById("masterAttTools").classList.toggle("is-off", !isAtt);
   const exam = document.getElementById("masterPageExam");
   exam.hidden = !isExam;
   if(isPeriod) masterOpenPeriod();
+  if(isLucky) masterOpenLucky();
   if(isExam){
     const item = MASTER_EXAM_MENU.find(x => `exam:${x.id}` === key);
     const label = item ? `${item.term} ${item.name}` : "정기고사";
@@ -351,6 +367,91 @@ function masterPeriodCsv(){
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   toast(`${cur.label} 통계를 내려받았어요.`);
+}
+
+/* ---------------- 위클리 행운아 ---------------- */
+async function masterOpenLucky(force){
+  if(!MASTER) return;
+  const refresh = document.getElementById("masterLuckyRefresh");
+  if(!refresh.dataset.bound){
+    refresh.dataset.bound = "1";
+    refresh.addEventListener("click", () => masterOpenLucky(true));
+    document.getElementById("masterLuckyCsv").addEventListener("click", masterLuckyCsv);
+  }
+  if(MASTER.lucky && !force){ renderMasterLucky(); return; }
+  const body = document.getElementById("masterLuckyBody");
+  body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오는 중...</div></div>`;
+  const { id, pw } = MASTER.cred;
+  const result = await postToSheet({ action: "masterLucky", masterId: id, masterPassword: pw });
+  if(!MASTER) return;
+  if(!result || result.status !== "ok"){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오지 못했어요</div><p>${result && result.reason === "locked" ? "로그인 시도가 너무 많아 잠겼어요. 잠시 후 다시 해 주세요." : "서버 코드가 아직 재배포되지 않았거나 인터넷 연결에 문제가 있을 수 있어요."}</p></div>`;
+    return;
+  }
+  MASTER.lucky = result;
+  renderMasterLucky();
+}
+
+function masterLuckyCellText(cell){
+  if(cell === undefined) return "";
+  if(cell === null) return "X";
+  return (cell.name || "") + (cell.count >= 2 ? `(${cell.count}회)` : "");
+}
+
+function renderMasterLucky(){
+  if(!MASTER || !MASTER.lucky) return;
+  const { classes, draws } = MASTER.lucky;
+  if(!MASTER.lgrade || !(classes[String(MASTER.lgrade)] || []).length){
+    const first = [1, 2, 3].find(g => (classes[String(g)] || []).length);
+    MASTER.lgrade = first || 1;
+  }
+  const grade = MASTER.lgrade;
+  const chips = document.getElementById("masterLuckyChips");
+  chips.innerHTML = [1, 2, 3].map(g => `<button type="button" class="master-chip${g === grade ? " active" : ""}" data-g="${g}">${g}학년</button>`).join("");
+  chips.querySelectorAll(".master-chip").forEach(b => b.addEventListener("click", () => { MASTER.lgrade = Number(b.dataset.g); renderMasterLucky(); }));
+
+  const body = document.getElementById("masterLuckyBody");
+  const cls = classes[String(grade)] || [];
+  if(!draws.length){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-emoji">🍀</div><div class="master-soon-title">아직 추첨 기록이 없어요</div>
+      <p>매주 금요일 아침 자동 추첨이 끝나면 이곳에 주차별로 쌓여요.<br>(Apps Script에서 <b>installWeeklyTrigger</b>를 한 번 실행해 두어야 자동 추첨이 시작돼요.)</p></div>`;
+    return;
+  }
+  if(!cls.length){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-title">${grade}학년에는 등록된 학급이 없어요</div></div>`;
+    return;
+  }
+  const head = `<thead><tr><th>주차</th>${cls.map(c => `<th>${c}반</th>`).join("")}</tr></thead>`;
+  const rows = draws.map((d, idx) => {
+    const tds = cls.map(c => {
+      const cell = d.cells[`${grade}-${c}`];
+      if(cell === undefined) return `<td class="lk-none" title="이 주차의 반별 추첨 기록이 없어요">-</td>`;
+      if(cell === null) return `<td class="lk-x" title="자격자 없음">X</td>`;
+      return `<td class="lk-win">${masterEsc(masterLuckyCellText(cell))}</td>`;
+    }).join("");
+    return `<tr${idx === draws.length - 1 ? ' class="master-latest"' : ""}><td class="lk-week">${masterEsc(d.label)}<span>${masterEsc(d.date.slice(5).replace("-", "/"))}</span></td>${tds}</tr>`;
+  }).join("");
+  body.innerHTML = `<div class="score-table-wrap"><table class="score-table master-table master-lucky">${head}<tbody>${rows}</tbody></table></div>
+    <p class="master-legend">X = 그 주 자격자 없음 · - = 그 주 반별 추첨 기록이 없음(예전 방식으로 뽑았거나 나중에 생긴 반) · 이름(N회) = N번째 당첨 · 맨 아래가 가장 최근 주차예요.</p>`;
+}
+
+function masterLuckyCsv(){
+  if(!MASTER || !MASTER.lucky) return;
+  const { classes, draws } = MASTER.lucky;
+  const grade = MASTER.lgrade || 1;
+  const cls = classes[String(grade)] || [];
+  if(!draws.length || !cls.length){ toast("내려받을 자료가 없어요."); return; }
+  const lines = [["주차", "추첨일"].concat(cls.map(c => `${c}반`))]
+    .concat(draws.map(d => [d.label, d.date].concat(cls.map(c => masterLuckyCellText(d.cells[`${grade}-${c}`])))));
+  const csv = "\uFEFF" + lines.map(r => r.map(masterCsvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `위클리행운아_${grade}학년.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  toast(`${grade}학년 위클리 행운아 표를 내려받았어요.`);
 }
 
 async function masterReload(date){

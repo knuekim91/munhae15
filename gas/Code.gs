@@ -7,11 +7,11 @@
 var SHEET_NAME = "기록";
 var HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름", "주차", "일자ID", "영역", "주제", "유형", "점수", "마일리지"];
 
-var WINNER_SHEET_NAME = "행운의7명";
+var WINNER_SHEET_NAME = "위클리행운아";
+var WINNER_LEGACY_SHEET_NAME = "행운의7명";   // 예전 이름의 탭이 있으면 이름만 바꿔서 기록을 이어 쓴다
 var WINNER_HEADER = ["추첨일", "학번코드", "학년", "반", "번호", "이름"];
 var DAILY_START = "08:30:00";    // 이 시각 이후에 완료해야 그날 인정
 var DAILY_CUTOFF = "08:45:00";   // 이 시각까지 완료해야 그날 인정
-var WINNER_COUNT = 7;
 
 var ACCESS_LOG_SHEET_NAME = "접속로그";
 var ACCESS_LOG_HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름"];
@@ -28,6 +28,7 @@ function doPost(e) {
       case "adminTeachers": result = handleAdminTeachers_(data); break;
       case "masterDashboard": result = handleMasterDashboard_(data); break;
       case "masterPeriodStats": result = handleMasterPeriodStats_(data); break;
+      case "masterLucky": result = handleMasterLucky_(data); break;
       case "examStart": result = handleExamStart_(data); break;
       case "examSave": result = handleExamSave_(data); break;
       case "examSubmit": result = handleExamSubmit_(data); break;
@@ -137,13 +138,17 @@ function typeLabel_(type) {
 }
 
 /* =========================================================================
-   금요일 "행운의 7명" 추첨
+   금요일 "위클리 행운아" 추첨 (반마다 1명)
    자격: 이번 주(월~금) 매일 08:30~08:45 사이에 학습을 완료한 학생
    ========================================================================= */
 
 function getWinnerSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(WINNER_SHEET_NAME);
+  if (!sheet) {
+    var legacy = ss.getSheetByName(WINNER_LEGACY_SHEET_NAME);
+    if (legacy) { legacy.setName(WINNER_SHEET_NAME); sheet = legacy; }
+  }
   if (!sheet) {
     sheet = ss.insertSheet(WINNER_SHEET_NAME);
     sheet.appendRow(WINNER_HEADER);
@@ -185,7 +190,27 @@ function shuffle_(arr) {
   return arr;
 }
 
-/** 매주 금요일 아침에 실행되도록 트리거로 연결하는 함수 (아래 pickWeeklyWinners) */
+/** 명렬에 있는 (테스트 반을 뺀) 학급 목록 [{grade, cls}] — 학년·반 순 */
+function getRosterClassList_() {
+  var values = getRosterSheet_().getDataRange().getValues();
+  var seen = {};
+  var out = [];
+  for (var i = 1; i < values.length; i++) {
+    var g = Number(values[i][0]), c = Number(values[i][1]);
+    if (!g || !c || EXAM_STAT_EXCLUDE_CLASSES.indexOf(c) >= 0) continue;
+    var key = g + "-" + c;
+    if (seen[key]) continue;
+    seen[key] = true;
+    out.push({ grade: g, cls: c });
+  }
+  return out.sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; });
+}
+
+/**
+ * 매주 금요일 아침에 실행되도록 트리거로 연결하는 함수.
+ * 위클리 행운아: 그 주(월~금) 5일을 모두 08:30~08:45 안에 완료한 학생 중 "반마다 1명"을 무작위로 뽑는다.
+ * 자격자가 없는 반은 이름 칸에 X를 적어 둔다. 테스트 반은 뽑지 않는다.
+ */
 function pickWeeklyWinners() {
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
   var wsheet = getWinnerSheet_();
@@ -205,34 +230,37 @@ function pickWeeklyWinners() {
     var row = values[r];
     var dt = tsToDateAndTime_(row[0]);
     var date = dt.date;
-    var time = dt.time;
+    var time = normTime_(dt.time);
     if (weekDates.indexOf(date) === -1) continue;
     if (time < DAILY_START || time > DAILY_CUTOFF) continue;
 
     var sid = String(row[1]);
     if (!map[sid]) {
-      map[sid] = { grade: row[2], cls: row[3], number: row[4], name: row[5], days: {} };
+      map[sid] = { grade: Number(row[2]), cls: Number(row[3]), number: row[4], name: row[5], days: {} };
     }
     map[sid].days[date] = true;
   }
 
-  var pool = [];
+  var poolByClass = {}; // "학년-반" -> [자격자]
   for (var sid2 in map) {
     var rec = map[sid2];
     var completedAll = weekDates.every(function (d) { return rec.days[d]; });
-    if (completedAll) pool.push({ studentId: sid2, grade: rec.grade, cls: rec.cls, number: rec.number, name: rec.name });
+    if (!completedAll) continue;
+    if (EXAM_STAT_EXCLUDE_CLASSES.indexOf(rec.cls) >= 0) continue;
+    var key = rec.grade + "-" + rec.cls;
+    if (!poolByClass[key]) poolByClass[key] = [];
+    poolByClass[key].push({ studentId: sid2, grade: rec.grade, cls: rec.cls, number: rec.number, name: rec.name });
   }
 
-  shuffle_(pool);
-  var winners = pool.slice(0, WINNER_COUNT);
-
-  if (winners.length === 0) {
-    wsheet.appendRow([todayStr, "", "", "", "", "(이번 주 5일 모두 완료한 학생 없음)"]);
-  } else {
-    winners.forEach(function (w) {
+  getRosterClassList_().forEach(function (c) {
+    var pool = poolByClass[c.grade + "-" + c.cls];
+    if (pool && pool.length) {
+      var w = shuffle_(pool)[0];
       wsheet.appendRow([todayStr, w.studentId, w.grade, w.cls, w.number, w.name]);
-    });
-  }
+    } else {
+      wsheet.appendRow([todayStr, "", c.grade, c.cls, "", "X"]);
+    }
+  });
 }
 
 /** 가장 최근 추첨일의 당첨자 목록 반환 */
@@ -1615,4 +1643,58 @@ function handleMasterPeriodStats_(data) {
   });
 
   return { status: "ok", today: today, minStudents: OPERATING_DAY_MIN_STUDENTS, months: months, semesters: semesters };
+}
+
+
+/* =========================================================================
+   위클리 행운아 — 마스터 화면용 (주차별·반별 당첨자 표)
+   - 시트 "위클리행운아"에 쌓인 추첨 기록(추첨일마다 반당 한 줄, 자격자가 없으면 이름 칸이 X)을 돌려준다.
+   - 같은 학생이 여러 번 뽑히면 count에 누적 당첨 횟수가 들어간다(화면에서 2회부터 "이름(N회)"로 표시).
+   - 주차 이름은 추첨일(금요일) 기준으로 "11월 1주차"처럼 붙인다(그 달의 첫 금요일이 1주차).
+   ========================================================================= */
+function weekLabelOf_(ymd) {
+  var m = Number(ymd.slice(5, 7));
+  var d = Number(ymd.slice(8, 10));
+  return m + "월 " + (Math.floor((d - 1) / 7) + 1) + "주차";
+}
+
+function handleMasterLucky_(data) {
+  var auth = checkMaster_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+
+  var values = getWinnerSheet_().getDataRange().getValues();
+  var byDate = {};
+  var dates = [];
+  var classSeen = {};
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    var date = tsToDateAndTime_(row[0]).date;
+    var g = Number(row[2]), c = Number(row[3]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !g || !c) continue;   // 예전 방식의 "대상자 없음" 줄 등은 건너뜀
+    if (!byDate[date]) { byDate[date] = {}; dates.push(date); }
+    var sid = String(row[1] || "");
+    byDate[date][g + "-" + c] = sid ? { studentId: sid, name: String(row[5] || ""), number: Number(row[4]) || 0 } : null;
+    classSeen[g + "-" + c] = { grade: g, cls: c };
+  }
+  dates.sort();
+
+  var counts = {};
+  var draws = dates.map(function (date) {
+    var cells = byDate[date];
+    Object.keys(cells).forEach(function (k) {
+      var w = cells[k];
+      if (!w) return;
+      counts[w.studentId] = (counts[w.studentId] || 0) + 1;
+      w.count = counts[w.studentId];
+    });
+    return { date: date, label: weekLabelOf_(date), cells: cells };
+  });
+
+  getRosterClassList_().forEach(function (c) { classSeen[c.grade + "-" + c.cls] = c; });
+  var classes = { "1": [], "2": [], "3": [] };
+  Object.keys(classSeen).map(function (k) { return classSeen[k]; })
+    .sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; })
+    .forEach(function (c) { if (classes[String(c.grade)]) classes[String(c.grade)].push(c.cls); });
+
+  return { status: "ok", classes: classes, draws: draws };
 }
