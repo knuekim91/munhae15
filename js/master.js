@@ -414,7 +414,7 @@ function renderMasterLucky(){
   const cls = classes[String(grade)] || [];
   if(!draws.length){
     body.innerHTML = `<div class="master-soon"><div class="master-soon-emoji">🍀</div><div class="master-soon-title">아직 추첨 기록이 없어요</div>
-      <p>매주 금요일 아침 자동 추첨이 끝나면 이곳에 주차별로 쌓여요.<br>(Apps Script에서 <b>installWeeklyTrigger</b>를 한 번 실행해 두어야 자동 추첨이 시작돼요.)</p></div>`;
+      <p>매주 금요일 아침 자동 추첨이 끝나면 이곳에 주차별로 쌓여요.<br>이미 자동 추첨이 켜져 있다면 따로 할 일은 없어요. (처음 설정할 때만 Apps Script에서 <b>installWeeklyTrigger</b>를 한 번 실행해요.)</p></div>`;
     return;
   }
   if(!cls.length){
