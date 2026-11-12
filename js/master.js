@@ -123,6 +123,7 @@ function openMasterDashboard(cred, data){
       <div class="master-layout">
         <nav class="master-side" id="masterSide" aria-label="마스터 메뉴">
           <button type="button" class="master-nav-item" data-page="attendance">📋 출결 현황</button>
+          <button type="button" class="master-nav-item" data-page="period">📈 월별·학기별</button>
           <div class="master-nav-group">📝 정기고사</div>
           ${MASTER_EXAM_MENU.map(x => `<button type="button" class="master-nav-item master-nav-sub" data-page="exam:${x.id}">${x.label}</button>`).join("")}
         </nav>
@@ -150,6 +151,20 @@ function openMasterDashboard(cred, data){
             </div>
             <div class="score-table-wrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
             <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(행운의 7명 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
+          </div>
+          <div id="masterPagePeriod" hidden>
+            <h2 class="master-page-title">월별 · 학기별 통계</h2>
+            <p class="master-note">운영일 = 평일 중 학생 <span id="masterPeriodMin">3</span>명 이상이 접속한 날(휴일·방학은 자동으로 빠져요). 완료율 = 재적 학생이 운영일마다 학습을 완료한 비율이에요.</p>
+            <div class="master-controls">
+              <div class="master-seg" role="tablist">
+                <button type="button" class="master-seg-btn active" data-kind="month">월별</button>
+                <button type="button" class="master-seg-btn" data-kind="semester">학기별</button>
+              </div>
+              <select id="masterPeriodSel" class="master-select" aria-label="기간 선택"></select>
+              <button class="btn btn-ghost master-btn" id="masterPeriodRefresh" type="button">새로고침</button>
+              <button class="btn btn-ghost master-btn" id="masterPeriodCsv" type="button">CSV 내려받기</button>
+            </div>
+            <div id="masterPeriodBody"></div>
           </div>
           <div id="masterPageExam" hidden></div>
         </main>
@@ -190,11 +205,15 @@ function masterShowPage(key){
   MASTER.page = key;
   document.querySelectorAll("#masterSide .master-nav-item").forEach(b => b.classList.toggle("active", b.dataset.page === key));
   const isAtt = key === "attendance";
+  const isPeriod = key === "period";
+  const isExam = !isAtt && !isPeriod;
   document.getElementById("masterPageAttendance").hidden = !isAtt;
+  document.getElementById("masterPagePeriod").hidden = !isPeriod;
   document.getElementById("masterAttTools").classList.toggle("is-off", !isAtt);
   const exam = document.getElementById("masterPageExam");
-  exam.hidden = isAtt;
-  if(!isAtt){
+  exam.hidden = !isExam;
+  if(isPeriod) masterOpenPeriod();
+  if(isExam){
     const item = MASTER_EXAM_MENU.find(x => `exam:${x.id}` === key);
     const label = item ? `${item.term} ${item.name}` : "정기고사";
     exam.innerHTML = `
@@ -208,6 +227,130 @@ function masterShowPage(key){
   }
   const main = document.querySelector(".master-main");
   if(main) main.scrollIntoView({ block: "start" });
+}
+
+/* ---------------- 월별 · 학기별 통계 ---------------- */
+function masterRate(v){ return v === null || v === undefined ? "-" : v + "%"; }
+
+async function masterOpenPeriod(force){
+  if(!MASTER) return;
+  document.querySelectorAll("#masterPagePeriod .master-seg-btn").forEach(b => {
+    if(!b.dataset.bound){
+      b.dataset.bound = "1";
+      b.addEventListener("click", () => { MASTER.pkind = b.dataset.kind; MASTER.pkey = ""; renderMasterPeriod(); });
+    }
+  });
+  const sel = document.getElementById("masterPeriodSel");
+  if(!sel.dataset.bound){
+    sel.dataset.bound = "1";
+    sel.addEventListener("change", () => { MASTER.pkey = sel.value; renderMasterPeriod(); });
+    document.getElementById("masterPeriodRefresh").addEventListener("click", () => masterOpenPeriod(true));
+    document.getElementById("masterPeriodCsv").addEventListener("click", masterPeriodCsv);
+  }
+  if(!MASTER.pkind) MASTER.pkind = "month";
+  if(MASTER.period && !force){ renderMasterPeriod(); return; }
+
+  const body = document.getElementById("masterPeriodBody");
+  body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오는 중...</div></div>`;
+  const { id, pw } = MASTER.cred;
+  const result = await postToSheet({ action: "masterPeriodStats", masterId: id, masterPassword: pw });
+  if(!MASTER) return;
+  if(!result || result.status !== "ok"){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오지 못했어요</div><p>${result && result.reason === "locked" ? "로그인 시도가 너무 많아 잠겼어요. 잠시 후 다시 해 주세요." : "서버 코드가 아직 재배포되지 않았거나 인터넷 연결에 문제가 있을 수 있어요."}</p></div>`;
+    return;
+  }
+  MASTER.period = result;
+  renderMasterPeriod();
+}
+
+function masterCurrentPeriod(){
+  const { period, pkind } = MASTER;
+  const list = pkind === "month" ? period.months : period.semesters;
+  let cur = list.find(x => x.key === MASTER.pkey);
+  if(!cur){
+    // 기본값: 월별은 가장 최근 달, 학기별은 오늘이 속한(없으면 운영일이 있는 가장 최근) 학기
+    cur = pkind === "month" ? list[list.length - 1]
+      : (list.find(x => x.start <= period.today && period.today <= x.end) || list.slice().reverse().find(x => x.opDays > 0) || list[0]);
+    MASTER.pkey = cur ? cur.key : "";
+  }
+  return { list, cur };
+}
+
+function renderMasterPeriod(){
+  if(!MASTER || !MASTER.period) return;
+  const { period, pkind } = MASTER;
+  document.getElementById("masterPeriodMin").textContent = period.minStudents;
+  document.querySelectorAll("#masterPagePeriod .master-seg-btn").forEach(b => b.classList.toggle("active", b.dataset.kind === pkind));
+  const { list, cur } = masterCurrentPeriod();
+  const sel = document.getElementById("masterPeriodSel");
+  sel.innerHTML = list.map(x => `<option value="${masterEsc(x.key)}"${cur && x.key === cur.key ? " selected" : ""}>${masterEsc(x.label)}</option>`).join("");
+  const body = document.getElementById("masterPeriodBody");
+
+  if(!cur){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-emoji">📭</div><div class="master-soon-title">아직 집계할 자료가 없어요</div><p>학생들이 접속하면 월별 통계가 생겨요.</p></div>`;
+    return;
+  }
+  if(!cur.opDays){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-emoji">📭</div><div class="master-soon-title">${masterEsc(cur.label)}에는 아직 운영일이 없어요</div>
+      <p>${pkind === "semester" ? "학기 기간은 구글 시트의 <b>학기설정</b> 탭에서 고칠 수 있어요." : ""}</p></div>`;
+    return;
+  }
+  const tile = (cls, label, value, sub) => `<div class="master-tile ${cls}"><div class="master-tile-num">${value}</div><div class="master-tile-label">${label}</div>${sub ? `<div class="master-tile-sub">${sub}</div>` : ""}</div>`;
+  const sc = cur.school;
+  const tiles = `<div class="master-summary">
+    ${tile("", "운영일", cur.opDays + "일", "")}
+    ${tile("is-done", "완료율", masterRate(sc.doneRate), `완료 ${sc.sumDone}회 / ${sc.enrolled}명`)}
+    ${tile("is-access", "접속률", masterRate(sc.accessRate), "완료·접속 포함")}
+    ${tile("", "학생당 평균 완료일", sc.avgDone + "일", `운영일 ${cur.opDays}일 중`)}
+  </div>`;
+
+  const row = (label, x, extra) => `<tr${extra || ""}>
+    <td>${label}</td><td>${x.enrolled}</td><td class="t-done">${masterRate(x.doneRate)}</td><td class="t-access">${masterRate(x.accessRate)}</td>
+    <td>${x.avgDone}일</td><td class="${x.zero ? "t-none" : ""}">${x.zero}명</td><td>${x.good80}명</td></tr>`;
+  const head = `<thead><tr><th>구분</th><th>재적</th><th>완료율</th><th>접속률</th><th>평균 완료일</th><th>완료 0일</th><th>80%↑ 완료</th></tr></thead>`;
+  const gradeRows = [1, 2, 3].map(g => row(`${g}학년`, cur.grades[String(g)])).join("") + row("<b>전체</b>", cur.school, ' class="master-total"');
+  const classRows = cur.classes.map(c => row(`${c.grade}학년 ${c.cls}반${c.test ? ' <span class="master-test">테스트</span>' : ""}`, c)).join("");
+
+  let trend = "";
+  if(pkind === "month" && period.months.length > 1){
+    const th = period.months.map(m => `<th>${masterEsc(m.short)}</th>`).join("");
+    const tr = (label, pick) => `<tr><td>${label}</td>${period.months.map(m => {
+      const v = pick(m); return `<td${m.key === cur.key ? ' class="master-cur"' : ""}>${masterRate(v)}</td>`;
+    }).join("")}</tr>`;
+    trend = `<div class="master-section-title">월별 추이 <span class="master-hint">완료율</span></div>
+      <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>구분</th>${th}</tr></thead><tbody>
+        ${tr("전체", m => m.school.doneRate)}${[1, 2, 3].map(g => tr(`${g}학년`, m => m.grades[String(g)].doneRate)).join("")}
+      </tbody></table></div>`;
+  }
+
+  body.innerHTML = `${tiles}
+    <div class="master-section-title">학년별 · ${masterEsc(cur.label)}</div>
+    <div class="score-table-wrap"><table class="score-table master-table">${head}<tbody>${gradeRows}</tbody></table></div>
+    <div class="master-section-title">반별</div>
+    <div class="score-table-wrap"><table class="score-table master-table">${head}<tbody>${classRows}</tbody></table></div>
+    ${trend}
+    <p class="master-legend">완료 0일 = 이 기간 운영일에 한 번도 학습을 완료하지 않은 학생 수 · 80%↑ 완료 = 운영일의 80% 이상 완료한 학생 수 · 테스트 반은 학년·전체 합계에서 빠져요.</p>`;
+}
+
+function masterPeriodCsv(){
+  if(!MASTER || !MASTER.period) return;
+  const { cur } = masterCurrentPeriod();
+  if(!cur || !cur.opDays){ toast("내려받을 자료가 없어요."); return; }
+  const head = ["구분", "학년", "반", "재적", "운영일", "완료율(%)", "접속률(%)", "평균 완료일", "완료 0일 학생", "80% 이상 완료 학생"];
+  const f = v => v === null || v === undefined ? "" : v;
+  const lines = [head,
+    ["전체", "", "", cur.school.enrolled, cur.opDays, f(cur.school.doneRate), f(cur.school.accessRate), cur.school.avgDone, cur.school.zero, cur.school.good80]]
+    .concat([1, 2, 3].map(g => { const x = cur.grades[String(g)]; return ["학년", g, "", x.enrolled, cur.opDays, f(x.doneRate), f(x.accessRate), x.avgDone, x.zero, x.good80]; }))
+    .concat(cur.classes.map(c => [c.test ? "반(테스트)" : "반", c.grade, c.cls, c.enrolled, cur.opDays, f(c.doneRate), f(c.accessRate), c.avgDone, c.zero, c.good80]));
+  const csv = "\uFEFF" + lines.map(r => r.map(masterCsvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `출결통계_${cur.key}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  toast(`${cur.label} 통계를 내려받았어요.`);
 }
 
 async function masterReload(date){

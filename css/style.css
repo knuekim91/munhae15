@@ -803,3 +803,11 @@ body.pre-login .mileage-chip{ display:none; }
   .master-nav-item{ width:auto; padding:8px 12px; }
   .master-nav-sub{ padding-left:12px; }
 }
+
+
+/* 월별·학기별 통계 */
+.master-seg{ display:inline-flex; border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; background:var(--bg-elevated); }
+.master-seg-btn{ border:none; background:none; font-family:inherit; font-size:14px; font-weight:700; padding:8px 16px; cursor:pointer; color:var(--text-dim); }
+.master-seg-btn.active{ background:var(--accent-dim); color:var(--accent-text); }
+.master-total td{ background:var(--bg-soft); font-weight:800; }
+td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent-text); }

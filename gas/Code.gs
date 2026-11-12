@@ -27,6 +27,7 @@ function doPost(e) {
       case "adminReset": result = handleAdminReset_(data); break;
       case "adminTeachers": result = handleAdminTeachers_(data); break;
       case "masterDashboard": result = handleMasterDashboard_(data); break;
+      case "masterPeriodStats": result = handleMasterPeriodStats_(data); break;
       case "examStart": result = handleExamStart_(data); break;
       case "examSave": result = handleExamSave_(data); break;
       case "examSubmit": result = handleExamSubmit_(data); break;
@@ -1438,4 +1439,180 @@ function handleMasterDashboard_(data) {
     .sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; });
 
   return { status: "ok", date: target, today: today, weekDates: week, school: school, grades: grades, classes: classes, students: students };
+}
+
+
+/* =========================================================================
+   월별 · 학기별 출결 통계 (마스터 전용)
+   - "운영일" = 평일(월~금) 중 테스트 반을 뺀 학생이 OPERATING_DAY_MIN_STUDENTS명 이상 접속한 날.
+     휴일·방학처럼 아무도 쓰지 않은 날은 저절로 빠지므로 달력을 따로 넣지 않아도 된다.
+   - 학생별 "완료일" = 운영일 중 그 학생이 학습을 완료한 날 수, "접속일" = 완료 또는 접속한 날 수.
+   - 완료율 = (재적 학생들의 완료일 합) ÷ (재적 × 운영일), 접속률도 같은 방식이다.
+   - 학기 기간은 시트 "학기설정" 탭(학기, 시작일, 종료일)에서 고친다. 처음 만들 때 넣는 날짜는 예시이니 학교 일정에 맞게 바꾸세요.
+   ========================================================================= */
+
+var SEMESTER_SHEET_NAME = "학기설정";
+var SEMESTER_HEADER = ["학기", "시작일", "종료일"];
+var OPERATING_DAY_MIN_STUDENTS = 3;
+
+function getSemesterSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SEMESTER_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SEMESTER_SHEET_NAME);
+    sheet.appendRow(SEMESTER_HEADER);
+    sheet.setFrozenRows(1);
+    sheet.getRange(2, 2, 20, 2).setNumberFormat("@");
+    sheet.appendRow(["1학기", "2026-08-29", "2026-12-31"]);
+    sheet.appendRow(["2학기", "2027-01-01", "2027-07-31"]);
+  }
+  return sheet;
+}
+
+function readSemesters_() {
+  var values = getSemesterSheet_().getDataRange().getValues();
+  var out = [];
+  for (var i = 1; i < values.length; i++) {
+    var name = String(values[i][0] || "").trim();
+    if (!name) continue;
+    var start = values[i][1] === "" ? "" : tsToDateAndTime_(values[i][1]).date;
+    var end = values[i][2] === "" ? "" : tsToDateAndTime_(values[i][2]).date;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) continue;
+    out.push({ name: name, start: start, end: end });
+  }
+  return out;
+}
+
+function pct1_(num, den) {
+  return den ? Math.round((num / den) * 1000) / 10 : null;
+}
+
+/** 운영일 목록(opDays)과 학생별 완료/접속 기록으로 학교·학년·반 통계를 만든다. */
+function periodStats_(opDays, students, done, access) {
+  var n = opDays.length;
+  var classMap = {};
+  students.forEach(function (s) {
+    var dd = 0, aa = 0;
+    for (var i = 0; i < n; i++) {
+      var d = opDays[i];
+      if (done[d] && done[d][s.id]) { dd++; aa++; }
+      else if (access[d] && access[d][s.id]) aa++;
+    }
+    var key = s.grade + "-" + s.cls;
+    var c = classMap[key];
+    if (!c) c = classMap[key] = { grade: s.grade, cls: s.cls, test: s.test, enrolled: 0, sumDone: 0, sumAccess: 0, zero: 0, good80: 0 };
+    c.enrolled++;
+    c.sumDone += dd;
+    c.sumAccess += aa;
+    if (n > 0 && dd === 0) c.zero++;
+    if (n > 0 && dd >= 0.8 * n) c.good80++;
+  });
+
+  function finish(c) {
+    return { enrolled: c.enrolled, sumDone: c.sumDone, sumAccess: c.sumAccess, zero: c.zero, good80: c.good80,
+             doneRate: n ? pct1_(c.sumDone, c.enrolled * n) : null,
+             accessRate: n ? pct1_(c.sumAccess, c.enrolled * n) : null,
+             avgDone: c.enrolled ? Math.round((c.sumDone / c.enrolled) * 10) / 10 : 0 };
+  }
+  var classes = Object.keys(classMap).map(function (k) {
+    var c = classMap[k];
+    var f = finish(c); f.grade = c.grade; f.cls = c.cls; f.test = c.test;
+    return f;
+  }).sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; });
+
+  var zeroAgg = function () { return { enrolled: 0, sumDone: 0, sumAccess: 0, zero: 0, good80: 0 }; };
+  var school = zeroAgg();
+  var grades = { "1": zeroAgg(), "2": zeroAgg(), "3": zeroAgg() };
+  Object.keys(classMap).forEach(function (k) {
+    var c = classMap[k];
+    if (c.test) return;
+    [school, grades[String(c.grade)]].forEach(function (t) {
+      if (!t) return;
+      t.enrolled += c.enrolled; t.sumDone += c.sumDone; t.sumAccess += c.sumAccess; t.zero += c.zero; t.good80 += c.good80;
+    });
+  });
+  var gOut = {};
+  Object.keys(grades).forEach(function (g) { gOut[g] = finish(grades[g]); });
+  return { opDays: n, school: finish(school), grades: gOut, classes: classes };
+}
+
+function handleMasterPeriodStats_(data) {
+  var auth = checkMaster_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+
+  var today = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+  var rosterValues = getRosterSheet_().getDataRange().getValues();
+  var students = [];
+  var info = {};
+  for (var r = 1; r < rosterValues.length; r++) {
+    var g = Number(rosterValues[r][0]), c = Number(rosterValues[r][1]), nn = Number(rosterValues[r][2]);
+    if (!g || !c || !nn) continue;
+    var id = studentId_(g, c, nn);
+    if (info[id]) continue;
+    info[id] = { id: id, grade: g, cls: c, test: EXAM_STAT_EXCLUDE_CLASSES.indexOf(c) >= 0 };
+    students.push(info[id]);
+  }
+
+  var done = {}, access = {}, activeNonTest = {};
+  function mark(map, sid, d) {
+    if (!map[d]) map[d] = {};
+    map[d][sid] = true;
+    if (!info[sid].test) {
+      if (!activeNonTest[d]) activeNonTest[d] = {};
+      activeNonTest[d][sid] = true;
+    }
+  }
+  var alog = getAccessLogSheet_();
+  var aLast = alog.getLastRow();
+  if (aLast >= 2) {
+    var av = alog.getRange(2, 1, aLast - 1, 2).getValues();
+    for (var i = 0; i < av.length; i++) {
+      var sid = String(av[i][1]);
+      if (!info[sid]) continue;
+      var d = tsToDateAndTime_(av[i][0]).date;
+      if (d > today) continue;
+      mark(access, sid, d);
+    }
+  }
+  var rec = getSheet_();
+  var rLast = rec.getLastRow();
+  if (rLast >= 2) {
+    var rv = rec.getRange(2, 1, rLast - 1, 2).getValues();
+    for (var j = 0; j < rv.length; j++) {
+      var sid2 = String(rv[j][1]);
+      if (!info[sid2]) continue;
+      var d2 = tsToDateAndTime_(rv[j][0]).date;
+      if (d2 > today) continue;
+      mark(done, sid2, d2);
+    }
+  }
+
+  var opDays = Object.keys(activeNonTest).filter(function (d) {
+    var dow = new Date(ymdToUtcMs_(d)).getUTCDay();
+    return dow >= 1 && dow <= 5 && Object.keys(activeNonTest[d]).length >= OPERATING_DAY_MIN_STUDENTS;
+  }).sort();
+
+  var monthKeys = [];
+  opDays.forEach(function (d) { var m = d.slice(0, 7); if (monthKeys.indexOf(m) < 0) monthKeys.push(m); });
+  var months = monthKeys.map(function (m) {
+    var days = opDays.filter(function (d) { return d.slice(0, 7) === m; });
+    var st = periodStats_(days, students, done, access);
+    st.key = m;
+    st.label = m.slice(0, 4) + "년 " + Number(m.slice(5)) + "월";
+    st.short = Number(m.slice(5)) + "월";
+    return st;
+  });
+
+  var semesters = readSemesters_().map(function (s) {
+    var days = opDays.filter(function (d) { return d >= s.start && d <= s.end; });
+    var st = periodStats_(days, students, done, access);
+    st.key = s.name;
+    st.label = s.name + " (" + s.start + " ~ " + s.end + ")";
+    st.short = s.name;
+    st.start = s.start;
+    st.end = s.end;
+    return st;
+  });
+
+  return { status: "ok", today: today, minStudents: OPERATING_DAY_MIN_STUDENTS, months: months, semesters: semesters };
 }
