@@ -615,8 +615,20 @@ def build_week(week, out_dir, make_pdf=True):
         path = os.path.join(tmp, "%s_Day%d_학습지.docx" % (week["file_prefix"], n))
         build_day(week, n, week["days"][n], path)
         docs.append(path)
-    pages = convert_pdfs(docs) if make_pdf else {}
-    bad = {k: v for k, v in pages.items() if v != 1}
+    pages = {}
+    if make_pdf:
+        # Word가 가끔 중간에 응답을 끊는다(RPC 오류). 새 Word로 다시 시도한다.
+        for attempt in range(1, 4):
+            try:
+                pages = convert_pdfs(docs)
+                break
+            except Exception as e:
+                print("   Word 변환 오류(%d/3): %s" % (attempt, str(e)[:60]))
+                if attempt == 3:
+                    raise
+                import time
+                time.sleep(5)
+    bad ={k: v for k, v in pages.items() if v != 1}
     if bad:
         print("!! 1쪽이 아닌 학습지:", bad)
         if os.path.abspath(out_dir) == HERE:      # 저장소 폴더에는 1쪽이 아닌 파일을 절대 넣지 않는다
