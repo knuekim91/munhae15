@@ -54,6 +54,7 @@ function renderLogin(){
             : "* 입력한 정보는 이 기기에만 저장됩니다."}
         </p>
         <button id="loginAdminLink" class="login-admin-link" type="button">⚙️ 담임 선생님이신가요? 관리자 설정</button>
+        <button id="loginMasterLink" class="login-admin-link" type="button">🛡️ 마스터 로그인 (전교 출결 보기)</button>
       </div>
     </div>`;
 
@@ -75,6 +76,7 @@ function renderLogin(){
     document.getElementById(id).addEventListener("keydown", e => { if(e.key === "Enter") submitLogin(); });
   });
   document.getElementById("loginAdminLink").addEventListener("click", openAdminAuthModal);
+  document.getElementById("loginMasterLink").addEventListener("click", openMasterAuthModal);
   document.getElementById("loginGrade").focus();
 }
 

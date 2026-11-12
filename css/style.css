@@ -505,6 +505,7 @@ body.pre-login .mileage-chip{ display:none; }
   cursor:pointer;
 }
 .login-admin-link:hover{ color:var(--text-dim); }
+.login-admin-link + .login-admin-link{ margin-top:2px; }
 
 /* ---------- profile chip ---------- */
 .profile-chip{
