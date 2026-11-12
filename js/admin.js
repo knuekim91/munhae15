@@ -104,10 +104,10 @@ async function submitAdminAuth(){
     return;
   }
 
-  renderAdminPanel(password, grade, cls, result.list || []);
+  renderAdminPanel(password, grade, cls, result.list || [], result.lucky || null);
 }
 
-function renderAdminPanel(adminPassword, grade, cls, list){
+function renderAdminPanel(adminPassword, grade, cls, list, lucky){
   const overlay = document.getElementById("adminModalOverlay");
   if(!overlay) return;
 
@@ -116,7 +116,7 @@ function renderAdminPanel(adminPassword, grade, cls, list){
   const rows = sorted.map(s => `
     <tr>
       <td>${s.grade}-${s.cls}-${s.number}</td>
-      <td>${s.name || ""}</td>
+      <td>${adminEsc(s.name || "")}${(lucky && lucky.latest && lucky.latest.name && s.number === lucky.latest.number) ? ' 🍀' : ''}</td>
       <td>🪙 ${s.mileage || 0}</td>
       <td>${s.progressRate}% (${s.completedDays}/${s.totalDays}일)</td>
       <td>${s.lastLogin || "-"}</td>
@@ -136,6 +136,7 @@ function renderAdminPanel(adminPassword, grade, cls, list){
         마일리지 순으로 정렬되어 있어요. 진도율은 학교 전체 최고 진도 대비 비율이에요.
         학생이 비밀번호를 잊었으면 초기화하세요.
       </p>
+      ${adminLuckyBanner(lucky)}
       <button id="adminBackBtn" class="btn btn-ghost" style="margin-bottom:12px;">‹ 학년·반 다시 입력</button>
       <div class="score-table-wrap admin-table-wrap">
         <table class="score-table">
@@ -172,4 +173,25 @@ async function resetStudentPassword(adminPassword, btn){
     btn.textContent = "초기화";
     toast("초기화에 실패했어요.");
   }
+}
+
+
+function adminEsc(v){
+  return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/** 담임용: 우리 반 가장 최근 위클리 행운아와 최근 이력 */
+function adminLuckyBanner(lucky){
+  if(!lucky || !lucky.latest) return "";
+  const l = lucky.latest;
+  const who = l.name
+    ? `<b class="admin-lucky-name">${adminEsc(l.name)}${l.count >= 2 ? `(${l.count}회)` : ""}</b> <span>${adminEsc(l.number)}번</span>`
+    : `<b class="admin-lucky-none">자격자 없음 (X)</b>`;
+  const hist = lucky.history.map(h => `${adminEsc(h.label)} ${h.name ? adminEsc(h.name) + (h.count >= 2 ? `(${h.count}회)` : "") : "X"}`).join(" · ");
+  return `<div class="admin-lucky">
+    <div>🍀 <b>이번 주 우리 반 위클리 행운아</b> <span class="admin-lucky-when">${adminEsc(l.label)} · ${adminEsc(l.date.slice(5).replace("-", "/"))} 추첨</span></div>
+    <div class="admin-lucky-who">${who}</div>
+    ${l.name ? '<div class="admin-lucky-tip">칭찬카드를 전달해 주세요. 아래 명단에서 🍀 표시가 행운아예요.</div>' : ""}
+    <div class="admin-lucky-hist">최근 5주: ${hist}</div>
+  </div>`;
 }

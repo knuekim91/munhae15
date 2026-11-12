@@ -242,6 +242,7 @@ async function submitNewPassword(oldPassword){
 
   showWelcomePopup(() => {
     document.body.classList.remove("pre-login");
+    window.__skipLuckyNotice = true;   // 처음 가입한 날은 환영 안내만 보여 준다
     startApp();
   });
 }

@@ -54,6 +54,10 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", exams: getExamStatusList_(), serverNow: Date.now() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+  if (e.parameter && e.parameter.luckyNotice) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", notice: getLuckyNotice_(e.parameter.studentId) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   var studentId = e.parameter && e.parameter.studentId;
   if (studentId) {
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", records: getHistory_(studentId) }))
@@ -607,7 +611,8 @@ function handleAdminStatus_(data) {
       progressRate: totalDays ? Math.round((completedDays / totalDays) * 100) : 0
     });
   }
-  return { status: "ok", list: list };
+  var lucky = (data.grade && data.cls) ? getClassLucky_(Number(data.grade), Number(data.cls)) : null;
+  return { status: "ok", list: list, lucky: lucky };
 }
 
 /** 학번코드별 누적 마일리지 합계 (기록 시트 "마일리지" 열 기준) */
@@ -1658,10 +1663,8 @@ function weekLabelOf_(ymd) {
   return m + "월 " + (Math.floor((d - 1) / 7) + 1) + "주차";
 }
 
-function handleMasterLucky_(data) {
-  var auth = checkMaster_(data);
-  if (!auth.ok) return { status: "error", reason: auth.reason };
-
+/** 시트의 추첨 기록을 주차별로 읽는다. draws[i].cells["학년-반"] = null(자격자 없음) | {studentId,name,number,count} | undefined(그 반은 기록 없음) */
+function readLuckyDraws_() {
   var values = getWinnerSheet_().getDataRange().getValues();
   var byDate = {};
   var dates = [];
@@ -1695,6 +1698,67 @@ function handleMasterLucky_(data) {
   Object.keys(classSeen).map(function (k) { return classSeen[k]; })
     .sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; })
     .forEach(function (c) { if (classes[String(c.grade)]) classes[String(c.grade)].push(c.cls); });
+  return { draws: draws, classes: classes };
+}
 
-  return { status: "ok", classes: classes, draws: draws };
+function handleMasterLucky_(data) {
+  var auth = checkMaster_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+  var r = readLuckyDraws_();
+  return { status: "ok", classes: r.classes, draws: r.draws };
+}
+
+/** 그 주(월~금) 중 08:30~08:45 안에 학습을 완료한 날 수(0~5) */
+function countInTimeDays_(studentId, weekDates) {
+  var sheet = getSheet_();
+  var last = sheet.getLastRow();
+  if (last < 2) return 0;
+  var vals = sheet.getRange(2, 1, last - 1, 2).getValues();
+  var days = {};
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][1]) !== String(studentId)) continue;
+    var dt = tsToDateAndTime_(vals[i][0]);
+    if (weekDates.indexOf(dt.date) < 0) continue;
+    var t = normTime_(dt.time);
+    if (t >= DAILY_START && t <= DAILY_CUTOFF) days[dt.date] = true;
+  }
+  return Object.keys(days).length;
+}
+
+/**
+ * 학생 앱 알림용: 가장 최근 추첨에서 "우리 반" 결과와 내 상태.
+ * isWinner(행운아 본인) / 대상자였지만 미당첨(myDays=5) / 미대상자(myDays<5) / 우리 반 자격자 없음(noWinner)
+ * 우리 반 당첨자 이름은 🎉 당첨자 목록에도 공개되는 정보이고, myDays는 본인 값만 돌려준다.
+ */
+function getLuckyNotice_(studentId) {
+  var sid = String(studentId || "");
+  if (!/^\d{4}$/.test(sid)) return { draw: null };
+  var grade = Number(sid.charAt(0)), cls = Number(sid.charAt(1));
+  var draws = readLuckyDraws_().draws;
+  if (!draws.length) return { draw: null };
+  var last = draws[draws.length - 1];
+  var cell = last.cells[grade + "-" + cls];
+  var draw = { date: last.date, label: last.label };
+  if (cell === undefined) return { draw: draw, noRecord: true };
+  return {
+    draw: draw, grade: grade, cls: cls,
+    isWinner: !!cell && cell.studentId === sid,
+    winner: cell ? { name: cell.name, number: cell.number, count: cell.count } : null,
+    noWinner: cell === null,
+    myDays: countInTimeDays_(sid, weekDatesOf_(last.date))
+  };
+}
+
+/** 담임용 관리자 화면: 우리 반의 가장 최근 행운아와 최근 5주 이력 */
+function getClassLucky_(grade, cls) {
+  var draws = readLuckyDraws_().draws;
+  var key = grade + "-" + cls;
+  var hist = [];
+  draws.forEach(function (d) {
+    if (d.cells[key] === undefined) return;
+    var w = d.cells[key];
+    hist.push({ label: d.label, date: d.date, name: w ? w.name : null, number: w ? w.number : 0, count: w ? w.count : 0 });
+  });
+  if (!hist.length) return null;
+  return { latest: hist[hist.length - 1], history: hist.slice(-5).reverse() };
 }

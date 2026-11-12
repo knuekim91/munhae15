@@ -175,6 +175,7 @@ function openMasterDashboard(cred, data){
             <div class="master-controls">
               <div class="master-chips" id="masterLuckyChips" style="margin:0"></div>
               <button class="btn btn-ghost master-btn" id="masterLuckyRefresh" type="button">새로고침</button>
+              <button class="btn btn-ghost master-btn" id="masterLuckyCopy" type="button" title="가장 최근 주차의 전교 발표문을 복사해요. 교사 단톡방에 붙여넣어 담임 선생님께 알려 주세요.">발표문 복사</button>
               <button class="btn btn-ghost master-btn" id="masterLuckyCsv" type="button">CSV 내려받기</button>
             </div>
             <div id="masterLuckyBody"></div>
@@ -377,6 +378,7 @@ async function masterOpenLucky(force){
     refresh.dataset.bound = "1";
     refresh.addEventListener("click", () => masterOpenLucky(true));
     document.getElementById("masterLuckyCsv").addEventListener("click", masterLuckyCsv);
+    document.getElementById("masterLuckyCopy").addEventListener("click", masterLuckyCopy);
   }
   if(MASTER.lucky && !force){ renderMasterLucky(); return; }
   const body = document.getElementById("masterLuckyBody");
@@ -433,6 +435,40 @@ function renderMasterLucky(){
   }).join("");
   body.innerHTML = `<div class="score-table-wrap"><table class="score-table master-table master-lucky">${head}<tbody>${rows}</tbody></table></div>
     <p class="master-legend">X = 그 주 자격자 없음 · - = 그 주 반별 추첨 기록이 없음(예전 방식으로 뽑았거나 나중에 생긴 반) · 이름(N회) = N번째 당첨 · 맨 아래가 가장 최근 주차예요.</p>`;
+}
+
+/** 가장 최근 주차의 전교 발표문(교사 단톡방 등에 붙여넣기용) */
+function masterLuckyAnnouncement(){
+  const { classes, draws } = MASTER.lucky;
+  if(!draws.length) return "";
+  const d = draws[draws.length - 1];
+  const lines = [`🍀 ${d.label} 위클리 행운아 (${d.date.slice(5).replace("-", "/")} 추첨)`];
+  [1, 2, 3].forEach(g => {
+    const cls = classes[String(g)] || [];
+    const parts = cls.filter(c => d.cells[`${g}-${c}`] !== undefined).map(c => {
+      const t = masterLuckyCellText(d.cells[`${g}-${c}`]);
+      return `${c}반 ${t}`;
+    });
+    if(parts.length) lines.push(`[${g}학년] ${parts.join(" / ")}`);
+  });
+  lines.push("※ 행운아는 담임 선생님께 칭찬카드를 받아 가요. X는 자격자 없음.");
+  return lines.join("\n");
+}
+
+async function masterLuckyCopy(){
+  if(!MASTER || !MASTER.lucky) return;
+  const text = masterLuckyAnnouncement();
+  if(!text){ toast("복사할 추첨 기록이 없어요."); return; }
+  let ok = false;
+  try{ await navigator.clipboard.writeText(text); ok = true; }catch(e){}
+  if(!ok){
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    ta.remove();
+  }
+  toast(ok ? "발표문을 복사했어요. 교사 단톡방 등에 붙여넣어 주세요." : "복사하지 못했어요. 브라우저 권한을 확인해 주세요.");
 }
 
 function masterLuckyCsv(){

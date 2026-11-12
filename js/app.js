@@ -708,5 +708,6 @@ function startApp(){
   flushPending();
   window.addEventListener("hashchange", router);
   router();
+  if(typeof checkLuckyNotice === "function") checkLuckyNotice();
 }
 document.addEventListener("DOMContentLoaded", init);

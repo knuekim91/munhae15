@@ -100,6 +100,20 @@ async function fetchLatestWinners(){
   }
 }
 
+/** 가장 최근 위클리 행운아 추첨에서 우리 반 결과와 내 상태를 가져온다. 연동 안 됐거나 실패하면 null. */
+async function fetchLuckyNotice(studentId){
+  const url = endpointUrl();
+  if(!url) return null;
+  try{
+    const res = await fetch(`${url}?luckyNotice=1&studentId=${encodeURIComponent(studentId)}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return (data && data.status === "ok") ? data.notice : null;
+  }catch(e){
+    return null;
+  }
+}
+
 function logActivity(day, score, mileage){
   const student = getStudent();
   if(!student || !day) return;

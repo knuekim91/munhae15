@@ -86,3 +86,88 @@ function formatWinnerDate(dateStr){
   if(isNaN(d)) return String(dateStr);
   return `${d.getMonth()+1}월 ${d.getDate()}일`;
 }
+
+
+/* ============================================================
+   위클리 행운아 발표 팝업 — 새 추첨이 있으면 학생마다 한 번, 다음에 앱을 열 때 보여 준다.
+   행운아 본인 / 추첨 대상자였지만 미당첨 / 대상이 아니었던 학생 / 자격자 없는 반 으로 문구가 달라진다.
+   ============================================================ */
+function luckyMyStatusLine(n){
+  if(n.myDays >= 5) return "너도 5일 모두 08:30~08:45에 완료한 추첨 대상자였어요! 아쉽게 뽑히지는 않았지만 정말 잘했어요. 다음 주에도 도전해요 💪";
+  if(!n.myDays) return "이번 주는 08:30~08:45에 완료한 기록이 없어요. 다음 주엔 아침에 도전해 봐요!";
+  return `이번 주는 5일 중 ${n.myDays}일을 08:30~08:45에 완료했어요. 5일 모두 완료하면 추첨 대상이 돼요. 다음 주에 도전해요!`;
+}
+
+/** 알림 데이터로 팝업에 보여 줄 내용을 만든다(화면과 분리해 테스트하기 쉽게 한다). */
+function luckyNoticeView(n){
+  const where = `${n.draw.label} · ${n.grade}학년 ${n.cls}반`;
+  if(n.isWinner){
+    const lines = ["5일 모두 08:30~08:45에 학습을 완료한 덕분이에요."];
+    if(n.winner && n.winner.count >= 2) lines.push(`벌써 ${n.winner.count}번째 행운아예요! 🍀`);
+    lines.push("담임 선생님께 알려서 칭찬카드를 받아 가세요.");
+    return { kind: "winner", emoji: "🎉", title: "축하해요! 이번 주 위클리 행운아는 바로 너예요!", sub: where, big: "", lines };
+  }
+  if(n.noWinner){
+    return { kind: "none", emoji: "🍀", title: "이번 주 우리 반은 행운아가 없어요", sub: where, big: "",
+      lines: ["5일 모두 08:30~08:45에 완료한 학생이 없었어요.", luckyMyStatusLine(n)] };
+  }
+  const w = n.winner || {};
+  const big = (w.name || "") + (w.count >= 2 ? `(${w.count}회)` : "");
+  return { kind: n.myDays >= 5 ? "eligible" : "other", emoji: "🍀", title: "이번 주 우리 반 위클리 행운아", sub: where, big, lines: [luckyMyStatusLine(n)] };
+}
+
+function luckySeenKey(studentId){ return `moonhae15_lucky_seen_${studentId}`; }
+
+async function checkLuckyNotice(){
+  if(window.__skipLuckyNotice){ window.__skipLuckyNotice = false; return; }
+  if(typeof sheetConnected !== "function" || !sheetConnected()) return;
+  const student = getStudent();
+  if(!student) return;
+  const n = await fetchLuckyNotice(student.id);
+  if(!n || !n.draw || n.noRecord) return;
+  let seen = null;
+  try{ seen = localStorage.getItem(luckySeenKey(student.id)); }catch(e){}
+  if(seen === n.draw.date) return;
+  if(getStudent() && getStudent().id !== student.id) return;
+  showLuckyNotice(n, student);
+}
+
+function showLuckyNotice(n, student){
+  const old = document.getElementById("luckyNoticeOverlay");
+  if(old) old.remove();
+  const v = luckyNoticeView(n);
+  const overlay = document.createElement("div");
+  overlay.id = "luckyNoticeOverlay";
+  overlay.className = "modal-overlay";
+  overlay.style.zIndex = 92;
+  const panel = document.createElement("div");
+  panel.className = "modal-panel lucky-panel lucky-" + v.kind;
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+
+  const add = (tag, cls, text) => { const e = document.createElement(tag); e.className = cls; e.textContent = text; panel.appendChild(e); return e; };
+  add("div", "lucky-emoji", v.emoji);
+  add("h2", "lucky-title", v.title);
+  add("div", "lucky-sub", v.sub);
+  if(v.big) add("div", "lucky-big", v.big);
+  v.lines.forEach(t => add("p", "lucky-line", t));
+
+  const close = () => {
+    try{ localStorage.setItem(luckySeenKey(student.id), n.draw.date); }catch(e){}
+    overlay.remove();
+  };
+  const row = document.createElement("div");
+  row.className = "lucky-actions";
+  const all = document.createElement("button");
+  all.type = "button"; all.className = "btn btn-ghost"; all.textContent = "전체 행운아 보기";
+  all.addEventListener("click", () => { close(); if(typeof openWinnersModal === "function") openWinnersModal(); });
+  const ok = document.createElement("button");
+  ok.type = "button"; ok.className = "btn btn-primary"; ok.textContent = "확인";
+  ok.addEventListener("click", close);
+  row.append(all, ok);
+  panel.appendChild(row);
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  ok.focus();
+}

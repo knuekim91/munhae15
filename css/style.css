@@ -821,3 +821,24 @@ td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent
 .master-lucky td.lk-x{ font-weight:800; color:var(--text-faint); }
 .master-lucky td.lk-none{ color:var(--text-faint); opacity:.5; }
 .master-lucky tr.master-latest td{ background:var(--accent-dim); }
+
+
+/* 위클리 행운아 발표 팝업(학생) */
+.lucky-panel{ max-width:440px; text-align:center; padding:28px 24px 22px; }
+.lucky-emoji{ font-size:46px; margin-bottom:4px; }
+.lucky-title{ font-size:19px; font-weight:900; margin:0 0 6px; line-height:1.4; }
+.lucky-sub{ font-size:13px; color:var(--text-faint); font-weight:700; margin-bottom:14px; }
+.lucky-big{ font-size:26px; font-weight:900; color:var(--accent-text); margin:2px 0 14px; }
+.lucky-line{ font-size:14.5px; line-height:1.7; color:var(--text-dim); margin:0 0 8px; }
+.lucky-winner .lucky-title{ color:var(--accent-text); }
+.lucky-eligible .lucky-line{ color:var(--text); }
+.lucky-actions{ display:flex; gap:8px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+
+/* 담임 관리자 화면: 우리 반 행운아 배너 */
+.admin-lucky{ background:var(--accent-dim); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:12px; font-size:13.5px; line-height:1.7; }
+.admin-lucky-when{ color:var(--text-faint); font-size:12px; margin-left:4px; }
+.admin-lucky-who{ font-size:17px; margin:2px 0; }
+.admin-lucky-name{ color:var(--accent-text); font-weight:900; }
+.admin-lucky-none{ color:var(--text-dim); }
+.admin-lucky-tip{ color:var(--text-dim); font-size:12.5px; }
+.admin-lucky-hist{ color:var(--text-faint); font-size:12px; margin-top:4px; }
