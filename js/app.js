@@ -382,6 +382,7 @@ function renderLearnDay(content, day, data){
   sub.className = "page-sub";
   sub.textContent = data.intro || "";
   content.appendChild(sub);
+  renderExtras(content, day, data, "top");
 
   const checkpointTracker = { total: 0, done: new Set() };
   let checkpointCursor = 0;
@@ -398,6 +399,7 @@ function renderLearnDay(content, day, data){
   if(data.confusable){
     content.appendChild(renderConfusable(data.confusable));
   }
+  renderExtras(content, day, data, "bottom");
 
   const row = document.createElement("div");
   row.className = "btn-row";
@@ -412,7 +414,7 @@ function renderLearnDay(content, day, data){
     }
     if(!markComplete(day.id)) return;
     btn.textContent = "✓ 학습 완료됨";
-    toast("잘했어요! 내일은 확인 문제로 복습해요 🙌");
+    toast(data.doneMsg || "잘했어요! 내일은 확인 문제로 복습해요 🙌");
     appendNextAction(row, day.id);
   });
   row.appendChild(btn);
@@ -532,6 +534,7 @@ function renderQuizDay(content, day, data, completeMsg){
 
 function buildQuizFlow(content, day, data, completeMsg){
   const state = { total: 0, correct: 0, checks: [] };
+  renderExtras(content, day, data, "top");
 
   (data.sections || []).forEach((sec, si) => {
     const title = document.createElement("div");
@@ -566,6 +569,7 @@ function buildQuizFlow(content, day, data, completeMsg){
   if(data.quote){
     content.appendChild(renderQuote(data.quote));
   }
+  renderExtras(content, day, data, "bottom");
 
   const resultCard = document.createElement("div");
   resultCard.className = "card result-card";
@@ -596,6 +600,111 @@ function buildQuizFlow(content, day, data, completeMsg){
   });
   row.appendChild(checkBtn);
   content.appendChild(row);
+}
+
+/* ---------------- 나의 계획 · 마음 한 줄 카드 (extras) ----------------
+   점수와 상관없는 자기주도 활동 카드. 학생이 쓴 내용은 이 기기(localStorage)에만 저장되고
+   선생님이나 서버로 전송되지 않는다.
+   kind: plan(글 쓰는 칸) / money(숫자 칸) / check(한 가지 고르기) / mind(마음 한 줄 + 미션 + 한 줄 쓰기) */
+function extraKey(dayId, x, sub){
+  const s = (typeof getStudent === "function" && getStudent()) || {};
+  return `moonhae15_x_${s.id || "anon"}_${dayId}_${x.id}${sub === undefined ? "" : "_" + sub}`;
+}
+function extraLoad(key){ try{ return localStorage.getItem(key) || ""; }catch(e){ return ""; } }
+function extraSave(key, v){ try{ localStorage.setItem(key, v); }catch(e){} }
+
+function renderExtras(content, day, data, place){
+  (data.extras || [])
+    .filter(x => (x.place || "bottom") === place)
+    .forEach(x => content.appendChild(renderExtraCard(x, day)));
+}
+
+function extraInput(day, x, idx, f, numeric){
+  const wrap = document.createElement("label");
+  wrap.className = "extra-field";
+  const lab = document.createElement("span");
+  lab.className = "extra-label";
+  lab.textContent = f.label;
+  wrap.appendChild(lab);
+  const row = document.createElement("span");
+  row.className = "extra-input-row";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = numeric ? 12 : 120;
+  if(numeric) input.inputMode = "numeric";
+  if(f.hint) input.placeholder = f.hint;
+  const key = extraKey(day.id, x, idx);
+  input.value = extraLoad(key);
+  input.addEventListener("input", () => extraSave(key, input.value));
+  row.appendChild(input);
+  if(f.suffix){
+    const suf = document.createElement("span");
+    suf.className = "extra-suffix";
+    suf.textContent = f.suffix;
+    row.appendChild(suf);
+  }
+  wrap.appendChild(row);
+  return wrap;
+}
+
+function renderExtraCard(x, day){
+  const card = document.createElement("div");
+  card.className = "card extra-card extra-" + x.kind;
+
+  const title = document.createElement("div");
+  title.className = "extra-title";
+  title.textContent = x.title;
+  card.appendChild(title);
+
+  if(x.kind === "plan" || x.kind === "money"){
+    const grid = document.createElement("div");
+    grid.className = x.kind === "money" ? "extra-grid" : "extra-list";
+    x.fields.forEach((f, i) => grid.appendChild(extraInput(day, x, i, f, x.kind === "money")));
+    card.appendChild(grid);
+  } else if(x.kind === "check"){
+    const p = document.createElement("div");
+    p.className = "extra-prompt";
+    p.textContent = x.prompt;
+    card.appendChild(p);
+    const opts = document.createElement("div");
+    opts.className = "extra-opts";
+    const key = extraKey(day.id, x);
+    const saved = extraLoad(key);
+    x.options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "extra-opt" + (saved === String(i) ? " selected" : "");
+      b.textContent = o;
+      b.addEventListener("click", () => {
+        [...opts.children].forEach(c => c.classList.remove("selected"));
+        b.classList.add("selected");
+        extraSave(key, String(i));
+      });
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+  } else if(x.kind === "mind"){
+    card.classList.add("extra-mind");
+    const t = document.createElement("div");
+    t.className = "extra-mind-text";
+    t.textContent = x.text;
+    card.appendChild(t);
+    const m = document.createElement("div");
+    m.className = "extra-mission";
+    m.textContent = "🌱 작은 미션  " + x.mission;
+    card.appendChild(m);
+    if(x.write){
+      card.appendChild(extraInput(day, x, 0, { label: "✍ " + x.write, hint: "여기에 한 줄 적어 보세요 (안 써도 괜찮아요)" }, false));
+    }
+  }
+
+  if(x.kind !== "mind" || x.write){
+    const note = document.createElement("div");
+    note.className = "extra-note";
+    note.textContent = "🔒 적은 내용은 이 기기에만 저장되고, 선생님께 전송되지 않아요.";
+    card.appendChild(note);
+  }
+  return card;
 }
 
 function renderQuote(quote){

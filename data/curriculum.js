@@ -73,6 +73,19 @@ const DAY_ROLES = [
   { slot: 5, type: "review",   tag: "복습",    label: "주간 종합복습 + 오늘의 명언" },
 ];
 
+/* ---- 새 형식 주차 (2주차부터 순차 적용) ----
+   하루 어휘 8개 x 3일(24개) → 4일차 종합점검(어휘 50% + 문장 지문 50%) → 5일차 새 문장 복습·돌아보기.
+   1주차는 아직 기존 형식(6개 x 2일 + 확인 2일)이다. 새 주차를 늘릴 때는 이 목록에 주차 번호만 추가한다. */
+const NEW_FORMAT_WEEKS = [2];
+
+const DAY_ROLES_V2 = [
+  { slot: 1, type: "learn",    tag: "학습①",   label: "어휘 학습① (단어 8개 · 확인문제 4개 · 이번 주 목표)" },
+  { slot: 2, type: "learn",    tag: "학습②",   label: "어휘 학습② (단어 8개 · 확인문제 4개 · 헷갈리는 어휘)" },
+  { slot: 3, type: "learn",    tag: "학습③",   label: "어휘 학습③ (단어 8개 · 확인문제 4개 · 중간 점검)" },
+  { slot: 4, type: "practice", tag: "종합점검", label: "종합 점검 (어휘 단위 50% · 문장 지문 50%)" },
+  { slot: 5, type: "review",   tag: "복습",     label: "주간 복습 (새 문장) + 돌아보기·다음 주 계획" },
+];
+
 /* ---- 커리큘럼 자동 생성 ---- */
 function buildCurriculum() {
   const weeks = [];
@@ -82,7 +95,8 @@ function buildCurriculum() {
   for (let w = 1; w <= 32; w++) {
     const topic = TOPICS[w - 1];
     const wk = String(w).padStart(2, "0");
-    const days = DAY_ROLES.map(role => ({
+    const roles = NEW_FORMAT_WEEKS.includes(w) ? DAY_ROLES_V2 : DAY_ROLES;
+    const days = roles.map(role => ({
       id: `w${wk}d${role.slot}`,
       week: w, slot: role.slot, type: role.type,
       unit: topic.unit, topic: topic.title, topicNumber: w,

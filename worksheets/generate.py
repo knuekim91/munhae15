@@ -4209,7 +4209,8 @@ def build_week(topic, out_prefix):
 
 if __name__ == "__main__":
     build_week(WEEK1, "1주차_1_공문서행정문서읽기")
-    build_week(WEEK2, "2주차_2_금융경제생활")
+    # 2주차부터는 새 형식(어휘 8개 x 3일 + 종합점검 + 주간복습) → generate_v2.py / week02_data.py 에서 만든다.
+    # (여기서 다시 만들면 새 학습지를 옛 형식으로 덮어쓰므로 일부러 뺐다)
     build_week(WEEK3, "3주차_3_소비자계약약관읽기")
     build_week(WEEK4, "4주차_4_미디어리터러시")
     build_week(WEEK5, "5주차_5_진로취업준비")
