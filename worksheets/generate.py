@@ -4212,8 +4212,8 @@ if __name__ == "__main__":
     # 2주차부터는 새 형식(어휘 8개 x 3일 + 종합점검 + 주간복습) → generate_v2.py / week02_data.py 에서 만든다.
     # (여기서 다시 만들면 새 학습지를 옛 형식으로 덮어쓰므로 일부러 뺐다)
     # 3주차도 새 형식 → week03_data.py (generate_v2.py)
-    build_week(WEEK4, "4주차_4_미디어리터러시")
-    build_week(WEEK5, "5주차_5_진로취업준비")
+    # 4주차도 새 형식 → week04_data.py (generate_v2.py)
+    # 5주차도 새 형식 → week05_data.py (generate_v2.py)
     build_week(WEEK6, "6주차_6_경영마케팅")
     build_week(WEEK7, "7주차_7_보건의료행정")
     build_week(WEEK8, "8주차_8_디자인영상콘텐츠")
