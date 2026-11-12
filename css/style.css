@@ -868,6 +868,9 @@ td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent
 .extra-mind{ background:linear-gradient(135deg,rgba(255,196,64,.16),transparent); }
 .extra-mind-text{ font-size:17px; font-weight:800; line-height:1.55; margin:2px 0 10px; }
 .extra-mission{ font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom:12px; }
+.extra-checks{ display:flex; flex-direction:column; gap:8px; }
+.extra-check-row{ display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px 10px; border-radius:var(--radius-sm); background:var(--bg-soft); }
+.extra-check-row input{ width:20px; height:20px; accent-color:var(--accent); flex:none; }
 .extra-note{ margin-top:10px; font-size:11.5px; color:var(--text-faint); }
 
 /* ---------- 좁은 휴대폰(≈440px 이하): 상단바가 화면 밖으로 넘치지 않게 ---------- */

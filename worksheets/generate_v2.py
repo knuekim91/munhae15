@@ -400,7 +400,27 @@ def mind_block(doc, x):
     spacer(doc, 2)
 
 
-EXTRA_RENDER = {"plan": plan_block, "check": check_block, "money": money_block, "mind": mind_block}
+def checklist_block(doc, x):
+    title_line(doc, x["title"], size=9, before=2, after=1)
+    items = x["items"]
+    rows = (len(items) + 1) // 2
+    table = doc.add_table(rows=rows, cols=2)
+    table.style = "Table Grid"
+    g.keep_table_together(table)
+    for i, label in enumerate(items):
+        r, c = divmod(i, 2)
+        cell = table.rows[r].cells[c]
+        cell.width = Cm(8.9)
+        g.set_cell_margins(cell, 40, 40, 100, 80)
+        para = g.tight(cell.paragraphs[0], 0, 0)
+        g.mixed_run(para, [("☐ ", 10, False, GRAY), (label, 8.6, False, None)])
+    if len(items) % 2:
+        table.rows[-1].cells[0].merge(table.rows[-1].cells[1])
+    spacer(doc, 3)
+
+
+EXTRA_RENDER = {"plan": plan_block, "check": check_block, "money": money_block, "mind": mind_block,
+                "checklist": checklist_block}
 
 
 def render_extras(doc, d, place):

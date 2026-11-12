@@ -683,6 +683,24 @@ function renderExtraCard(x, day){
       opts.appendChild(b);
     });
     card.appendChild(opts);
+  } else if(x.kind === "checklist"){
+    const list = document.createElement("div");
+    list.className = "extra-checks";
+    x.items.forEach((label, i) => {
+      const key = extraKey(day.id, x, i);
+      const row = document.createElement("label");
+      row.className = "extra-check-row";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = extraLoad(key) === "1";
+      box.addEventListener("change", () => extraSave(key, box.checked ? "1" : "0"));
+      const txt = document.createElement("span");
+      txt.textContent = label;
+      row.appendChild(box);
+      row.appendChild(txt);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
   } else if(x.kind === "mind"){
     card.classList.add("extra-mind");
     const t = document.createElement("div");
