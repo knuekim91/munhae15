@@ -869,3 +869,22 @@ td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent
 .extra-mind-text{ font-size:17px; font-weight:800; line-height:1.55; margin:2px 0 10px; }
 .extra-mission{ font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom:12px; }
 .extra-note{ margin-top:10px; font-size:11.5px; color:var(--text-faint); }
+
+/* ---------- 좁은 휴대폰(≈440px 이하): 상단바가 화면 밖으로 넘치지 않게 ---------- */
+.topbar-actions > *{ flex-shrink:0; }
+.topbar-actions > .profile-chip{ flex-shrink:1; }
+.topbar-actions > .profile-chip .profile-label{ flex-shrink:1; }
+@media (max-width: 440px){
+  .topbar{ padding:0 8px; gap:6px; }
+  .topbar-actions{ gap:3px; }
+  .topbar-actions .icon-btn{ width:32px; height:32px; }
+  .profile-chip{ padding:4px 8px 4px 4px; gap:4px; }
+  .profile-label{ max-width:64px; }
+  .score-icon-btn{ width:22px; height:22px; font-size:13px; }
+  .profile-avatar{ width:24px; height:24px; font-size:12px; }
+  .streak-chip, .mileage-chip{ padding:5px 8px; gap:3px; font-size:13px; }
+}
+@media (max-width: 360px){
+  .profile-avatar{ display:none; }
+  .profile-label{ max-width:48px; }
+}
