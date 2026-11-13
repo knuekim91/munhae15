@@ -2001,11 +2001,17 @@ function handleGameRanking_(p) {
   var rk = getGameRanking_();
   var today = kstToday_();
   var st = getGameState_(student.id, today);                     // 내 점수는 가장 최근 값(랭킹 표는 최대 2분 늦을 수 있음)
-  var me = rk.byId[student.id] || { rank: rk.total, classRank: 0, classTotal: 0 };
   var myPoints = gamePointSum_(st.best);
+  var me = rk.byId[student.id];
+  var isTest = !me;                       // 테스트 반(순위 제외 반) 학생: 실제 순위에는 들어가지 않는다
+  if (isTest) {                           // 시험 삼아 해 보는 용도로, "이 점수라면 몇 위인지"만 참고로 알려 준다
+    var higher = 0;
+    Object.keys(rk.byId).forEach(function (k) { if (rk.byId[k].points > myPoints) higher++; });
+    me = { rank: higher + 1, classRank: 0, classTotal: 0 };
+  }
   var key = student.grade + "-" + student.cls;
   return {
-    status: "ok", date: today, myPoints: myPoints, myPlayed: myPoints > 0, title: gameTitle_(myPoints),
+    status: "ok", date: today, myPoints: myPoints, myPlayed: myPoints > 0, title: gameTitle_(myPoints), test: isTest,
     schoolRank: me.rank, schoolTotal: rk.total, schoolPlayers: rk.players,
     classRank: me.classRank, classTotal: me.classTotal,
     top: rk.top, classTop: rk.classTop[key] || [], maskNames: GAME_RANK_MASK_NAMES

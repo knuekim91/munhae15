@@ -146,7 +146,9 @@ function gameRankCard(r){
   if(!r) return "";
   const tab = GAME_RANK_TAB === "class" ? "class" : "school";
   const list = tab === "school" ? (r.top || []) : (r.classTop || []);
-  const mine = r.myPlayed
+  const mine = r.test
+    ? `<div class="game-rank-me">🧪 테스트 반이라 실제 랭킹에는 들어가지 않아요. 지금 <b>❤️ ${r.myPoints}점</b>이면 전교 ${r.schoolRank}위쯤이에요(참고).</div>`
+    : r.myPlayed
     ? `<div class="game-rank-me">내 순위 <b>전교 ${r.schoolRank}위</b> / ${r.schoolTotal}명 · <b>우리 반 ${r.classRank}위</b> / ${r.classTotal}명 · ❤️ ${r.myPoints}점</div>`
     : `<div class="game-rank-me">아직 참여 기록이 없어 <b>0점</b>이에요. 오늘 한 판만 해도 1점부터 시작해요! (순위 ${r.schoolRank}위 · 공동)</div>`;
   const rows = list.length

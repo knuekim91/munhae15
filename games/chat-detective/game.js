@@ -96,7 +96,7 @@
       return d && d.status === "ok" ? d : null;
     } catch (e) { return null; }
   }
-  const rankChip = () => (RK ? `<span class="chip2">🏆 전교 ${RK.schoolRank}위 · 우리 반 ${RK.classRank}위</span>` : "");
+  const rankChip = () => (RK ? (RK.test ? `<span class="chip2">🧪 테스트 반 · 참고 전교 ${RK.schoolRank}위</span>` : `<span class="chip2">🏆 전교 ${RK.schoolRank}위 · 우리 반 ${RK.classRank}위</span>`) : "");
 
   /* ---------- 홈 ---------- */
   function statusBanner() {
