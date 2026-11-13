@@ -1,0 +1,125 @@
+/* 수상한 단톡방 — 문해력 15분과 같은 색 체계(밝은/어두운 테마) */
+:root{
+  --bg:#f5f6fb; --bg-elevated:#fff; --bg-soft:#eef0fa; --text:#1c1e2b; --text-dim:#6b6f85; --text-faint:#9498ab;
+  --border:#e6e8f2; --accent:#5b6cf9; --accent-dim:#eef0ff; --accent-text:#3a48d6;
+  --good:#2fb380; --good-bg:#e6f8f0; --bad:#ef5c6b; --bad-bg:#fdeaec; --warn:#f2a541; --gold:#f5b301;
+  --bubble:#fff; --bubble-me:#dfe4ff;
+  --radius-lg:20px; --radius-md:14px; --radius-sm:10px;
+  --shadow:0 2px 10px rgba(30,32,60,.05),0 10px 30px rgba(30,32,60,.06);
+  --font:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#14151f; --bg-elevated:#1b1d2b; --bg-soft:#212333; --text:#eceefb; --text-dim:#a6a9c2; --text-faint:#6e7189;
+  --border:#2b2d40; --accent:#7c88ff; --accent-dim:#262a4d; --accent-text:#aab2ff;
+  --good:#45cc94; --good-bg:#123528; --bad:#ff7684; --bad-bg:#3a1c22; --warn:#f2b563;
+  --bubble:#262839; --bubble-me:#2d3466; --shadow:0 2px 10px rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.3);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14151f; --bg-elevated:#1b1d2b; --bg-soft:#212333; --text:#eceefb; --text-dim:#a6a9c2; --text-faint:#6e7189;
+    --border:#2b2d40; --accent:#7c88ff; --accent-dim:#262a4d; --accent-text:#aab2ff;
+    --good:#45cc94; --good-bg:#123528; --bad:#ff7684; --bad-bg:#3a1c22; --warn:#f2b563;
+    --bubble:#262839; --bubble-me:#2d3466; --shadow:0 2px 10px rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.3);
+  }
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{ background:var(--bg); color:var(--text); font-family:var(--font); font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%; }
+button{ font:inherit; color:inherit; cursor:pointer; }
+
+.top{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--bg-elevated); border-bottom:1px solid var(--border); }
+.back{ text-decoration:none; color:var(--text-dim); font-size:20px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:10px; }
+.back:hover{ background:var(--bg-soft); }
+.top-title{ font-weight:800; font-size:16px; flex:1; }
+.beta{ font-size:11px; font-weight:800; color:var(--accent-text); background:var(--accent-dim); padding:2px 7px; border-radius:7px; margin-left:4px; vertical-align:middle; }
+.top-right{ font-size:14px; font-weight:800; display:flex; align-items:center; gap:10px; }
+.hearts{ letter-spacing:2px; }
+.heart-lost{ opacity:.25; filter:grayscale(1); }
+
+.app{ max-width:640px; margin:0 auto; padding:16px 16px 90px; }
+h1,h2,h3{ margin:0; }
+.lead{ color:var(--text-dim); font-size:14.5px; margin:6px 0 18px; }
+.card{ background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow); margin-bottom:14px; }
+
+/* 홈: 사건 목록 */
+.case-list{ display:grid; gap:12px; }
+.case-card{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; box-shadow:var(--shadow); transition:.15s; }
+.case-card:hover{ border-color:var(--accent); transform:translateY(-1px); }
+.case-ico{ font-size:30px; width:52px; height:52px; border-radius:16px; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; flex:none; }
+.case-body{ flex:1; min-width:0; }
+.case-no{ font-size:12px; font-weight:800; color:var(--accent-text); }
+.case-name{ font-size:16.5px; font-weight:800; }
+.case-sub{ font-size:12.5px; color:var(--text-dim); }
+.stars{ white-space:nowrap; font-size:16px; letter-spacing:1px; }
+.star-off{ opacity:.22; filter:grayscale(1); }
+.level{ font-size:12px; color:var(--text-faint); font-weight:700; }
+
+.btn{ border:none; border-radius:var(--radius-md); padding:13px 20px; font-weight:800; font-size:16px; background:var(--accent); color:#fff; box-shadow:var(--shadow); }
+.btn:disabled{ opacity:.4; box-shadow:none; cursor:not-allowed; }
+.btn.ghost{ background:var(--bg-soft); color:var(--text); box-shadow:none; }
+.btn.small{ padding:8px 14px; font-size:14px; }
+.btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+/* 사건 화면 */
+.case-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.case-head .case-ico{ width:44px; height:44px; font-size:24px; border-radius:14px; }
+.case-title{ font-size:20px; font-weight:800; line-height:1.3; }
+.step{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--accent-text); background:var(--accent-dim); padding:4px 10px; border-radius:999px; margin:10px 0 12px; }
+
+.chat{ background:var(--bg-soft); border-radius:var(--radius-lg); padding:12px 10px; display:flex; flex-direction:column; gap:10px; }
+.room-name{ text-align:center; font-size:12.5px; color:var(--text-faint); font-weight:700; padding-bottom:2px; }
+.msg{ display:flex; gap:8px; align-items:flex-start; text-align:left; width:100%; background:none; border:none; padding:0; animation:msgIn .35s ease-out both; }
+.avatar{ width:38px; height:38px; border-radius:14px; background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; font-size:21px; flex:none; border:1px solid var(--border); }
+.bubble{ background:var(--bubble); border:2px solid transparent; border-radius:4px 16px 16px 16px; padding:8px 12px; max-width:calc(100% - 50px); box-shadow:0 1px 2px rgba(30,32,60,.08); transition:border-color .12s, background .12s, transform .12s; }
+.msg.me .bubble{ background:var(--bubble-me); }
+.who{ font-size:12.5px; font-weight:800; color:var(--text-dim); }
+.who small{ font-weight:600; color:var(--text-faint); margin-left:6px; }
+.bubble p{ margin:2px 0 0; font-size:15.5px; word-break:keep-all; overflow-wrap:anywhere; }
+.msg:focus-visible .bubble{ outline:3px solid var(--accent); }
+.msg.sel .bubble{ border-color:var(--accent); background:var(--accent-dim); transform:scale(1.015); }
+.msg.linked .bubble{ border-color:var(--good); background:var(--good-bg); }
+.msg.linked .who::after{ content:" 🔗"; }
+.msg.shake .bubble{ animation:shake .45s ease-in-out; border-color:var(--bad); background:var(--bad-bg); }
+.msg:disabled{ cursor:default; }
+.typing{ display:inline-flex; gap:4px; background:var(--bubble); border-radius:4px 16px 16px 16px; padding:10px 14px; margin-left:46px; align-self:flex-start; }
+.typing i{ width:7px; height:7px; border-radius:50%; background:var(--text-faint); animation:blink 1s infinite; }
+.typing i:nth-child(2){ animation-delay:.15s; } .typing i:nth-child(3){ animation-delay:.3s; }
+
+.actions{ position:sticky; bottom:0; margin:12px -16px 0; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg) 70%, transparent); display:flex; gap:10px; align-items:center; }
+.actions .btn{ flex:1; }
+.picked{ font-size:13px; color:var(--text-dim); font-weight:700; margin-top:8px; }
+
+/* 이유 고르기 */
+.reasons{ display:grid; gap:10px; margin-top:8px; }
+.reason{ text-align:left; width:100%; background:var(--bg-elevated); border:2px solid var(--border); border-radius:var(--radius-md); padding:13px 14px; font-size:15.5px; font-weight:600; transition:.12s; }
+.reason:hover:not(:disabled){ border-color:var(--accent); }
+.reason.right{ border-color:var(--good); background:var(--good-bg); animation:pop .5s cubic-bezier(.2,.9,.3,1.3); }
+.reason.wrong{ border-color:var(--bad); background:var(--bad-bg); animation:shake .45s; }
+.reason-key{ display:inline-block; width:24px; height:24px; line-height:24px; text-align:center; border-radius:8px; background:var(--bg-soft); font-size:12.5px; font-weight:800; margin-right:8px; }
+
+/* 반전 */
+.reveal{ text-align:center; animation:pop .6s cubic-bezier(.2,.9,.3,1.3); }
+.reveal h2{ font-size:22px; margin-bottom:6px; }
+.reveal p{ margin:8px 0; text-align:left; font-size:15.5px; }
+.big-stars{ font-size:38px; letter-spacing:6px; margin:6px 0; }
+.big-stars span{ display:inline-block; animation:starIn .5s ease-out both; }
+.big-stars span:nth-child(2){ animation-delay:.2s; } .big-stars span:nth-child(3){ animation-delay:.4s; }
+.lesson{ text-align:left; background:var(--accent-dim); border-radius:var(--radius-md); padding:12px 14px; margin-top:12px; font-size:14.5px; }
+.chip{ display:inline-block; background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:2px 9px; border-radius:999px; margin-right:5px; }
+.score-note{ font-size:13px; color:var(--text-dim); margin-top:6px; }
+.combo{ display:inline-block; margin-top:8px; font-weight:800; color:var(--warn); }
+
+.spark{ position:fixed; pointer-events:none; font-size:16px; color:var(--gold); z-index:20; animation:sparkFly .9s ease-out forwards; }
+
+@keyframes msgIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+@keyframes blink{ 0%,100%{ opacity:.25; } 50%{ opacity:1; } }
+@keyframes shake{ 0%,100%{ transform:translateX(0); } 15%{ transform:translateX(-7px); } 30%{ transform:translateX(6px); } 45%{ transform:translateX(-5px); } 60%{ transform:translateX(4px); } 75%{ transform:translateX(-2px); } }
+@keyframes pop{ 0%{ transform:scale(.9); opacity:.2; } 55%{ transform:scale(1.05); } 100%{ transform:scale(1); opacity:1; } }
+@keyframes starIn{ from{ transform:scale(.2) rotate(-40deg); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes sparkFly{ 0%{ opacity:1; transform:translate(0,0) scale(.4); } 100%{ opacity:0; transform:translate(var(--dx),var(--dy)) scale(1.2) rotate(120deg); } }
+@media (prefers-reduced-motion: reduce){
+  .msg, .reason.right, .reason.wrong, .reveal, .big-stars span, .msg.shake .bubble{ animation:none !important; }
+  .typing i{ animation:none; opacity:.6; }
+  .spark{ display:none; }
+}
+@media (max-width:380px){ .bubble p{ font-size:15px; } .case-name{ font-size:15.5px; } }
