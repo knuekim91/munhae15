@@ -480,11 +480,16 @@ async function masterOpenGame(force){
   renderMasterGame();
 }
 
+/** 게임 참여 화면의 학년 펼침·반 선택 상태 */
+function masterGameView(){ return MASTER.gv || (MASTER.gv = { open: {}, cls: "" }); }
+
 function masterGameStudents(){
   const g = MASTER.game;
+  const gv = masterGameView();
   const f = document.getElementById("masterGameFilter").value;
   const q = document.getElementById("masterGameSearch").value.trim();
   return g.students.filter(s => {
+    if(gv.cls && `${s.grade}-${s.cls}` !== gv.cls) return false;
     if(f === "today" && !s.todayPlays) return false;
     if(f === "notToday" && s.todayPlays) return false;
     if(f === "never" && s.plays) return false;
@@ -506,10 +511,24 @@ function renderMasterGame(){
     ${tile("", "누적 푼 사건", sc.plays + "판", "")}
     ${tile("", "학생당 평균", sc.players ? (Math.round(sc.plays / sc.players * 10) / 10) + "판" : "-", "참여 학생 기준")}
   </div>`;
-  const classRows = g.classes.map(c => `<tr>
-    <td>${c.grade}학년 ${c.cls}반${c.test ? ' <span class="master-test">테스트</span>' : ""}</td><td>${c.enrolled}</td>
-    <td>${c.todayPlayers}명</td><td>${c.players}명 (${masterPct(c.players, c.enrolled)}%)</td><td>${c.todayPlays}</td><td>${c.plays}</td>
-    <td>${c.players ? (Math.round(c.points / c.players * 10) / 10) : "-"}</td></tr>`).join("");
+  const gv = masterGameView();
+  const statCells = x => `<td>${x.enrolled}</td><td>${x.todayPlayers}명</td><td>${x.players}명 (${masterPct(x.players, x.enrolled)}%)</td><td>${x.todayPlays}</td><td>${x.plays}</td>
+    <td>${x.players ? (Math.round(x.points / x.players * 10) / 10) : "-"}</td>`;
+  const gradeNums = Array.from(new Set(g.classes.map(c => c.grade))).sort((a, b) => a - b);
+  const classRows = gradeNums.map(gr => {
+    const inGrade = g.classes.filter(c => c.grade === gr);
+    const agg = { enrolled: 0, todayPlayers: 0, players: 0, todayPlays: 0, plays: 0, points: 0 };
+    inGrade.filter(c => !c.test).forEach(c => Object.keys(agg).forEach(k => { agg[k] += c[k] || 0; }));   // 테스트 반은 학년 합계에서 뺀다
+    const open = !!gv.open[gr] || inGrade.some(c => gv.cls === `${c.grade}-${c.cls}`);
+    let html = `<tr class="master-row master-grade-row${open ? " open" : ""}" data-grade="${gr}" tabindex="0" role="button" aria-expanded="${open}">
+      <td><span class="master-caret" aria-hidden="true">${open ? "▾" : "▸"}</span> ${gr}학년</td>${statCells(agg)}</tr>`;
+    if(open) html += inGrade.map(c => {
+      const key = `${c.grade}-${c.cls}`;
+      return `<tr class="master-row master-subrow${gv.cls === key ? " active" : ""}" data-key="${key}" tabindex="0" role="button">
+        <td>${c.cls}반${c.test ? ' <span class="master-test">테스트</span>' : ""}</td>${statCells(c)}</tr>`;
+    }).join("");
+    return html;
+  }).join("");
   const list = masterGameStudents();
   const stuRows = list.map(s => `<tr>
     <td>${s.grade}-${s.cls}-${s.number}</td><td>${masterEsc(s.name)}</td>
@@ -518,16 +537,34 @@ function renderMasterGame(){
   const caseRows = g.cases.map(c => `<tr><td>${masterEsc(c.caseId)}</td><td>${c.plays}</td>
     <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgPoints}</td></tr>`).join("");
   body.innerHTML = `${tiles}
-    <div class="master-section-title">반별 현황</div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 점수</th></tr></thead>
+    <div class="master-section-title">학년별 현황 <span class="master-hint">학년을 누르면 반이 펼쳐지고, 반을 누르면 그 반 학생 현황이 나와요</span></div>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학년 · 반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 점수</th></tr></thead>
       <tbody>${classRows || `<tr><td colspan="7" class="master-empty">등록된 학급이 없어요.</td></tr>`}</tbody></table></div>
-    <div class="master-section-title">학생별 (${list.length}명)</div>
+    <div class="master-section-title" id="masterGameStudentTitle">학생별${gv.cls ? " · " + gv.cls.replace("-", "학년 ") + "반" : ""} (${list.length}명)${gv.cls ? ' <button type="button" class="btn btn-ghost master-btn" id="masterGameClsClear">전체 보기</button>' : ""}</div>
     <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>점수</th><th>전교 순위</th><th>반 순위</th><th>칭호</th><th>마지막 참여</th></tr></thead>
       <tbody>${stuRows || `<tr><td colspan="10" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody></table></div>
     <div class="master-section-title">사건별 <span class="master-hint">새 사건을 만들 때 난이도 참고용이에요</span></div>
     <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>사건</th><th>푼 판</th><th>해결률</th><th>5점 비율</th><th>평균 점수</th></tr></thead>
       <tbody>${caseRows || `<tr><td colspan="5" class="master-empty">아직 기록이 없어요.</td></tr>`}</tbody></table></div>
     <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 2점 이상(해결한) 판의 비율 · 점수 = 사건마다 가장 높은 점수의 합(참여하지 않으면 0점) · 순위는 점수가 같으면 공동이며 테스트 반은 순위와 전교 합계에서 빠져요.</p>`;
+  const act = (el, fn) => {
+    el.addEventListener("click", fn);
+    el.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fn(); } });
+  };
+  body.querySelectorAll(".master-grade-row").forEach(tr => act(tr, () => {
+    const gr = tr.dataset.grade;
+    const cur = !!gv.open[gr] || (gv.cls && gv.cls.split("-")[0] === gr);
+    gv.open[gr] = !cur;
+    if(cur && gv.cls && gv.cls.split("-")[0] === gr) gv.cls = "";      // 접으면 그 학년의 반 선택도 풀어 준다
+    renderMasterGame();
+  }));
+  body.querySelectorAll(".master-subrow").forEach(tr => act(tr, () => {
+    gv.cls = gv.cls === tr.dataset.key ? "" : tr.dataset.key;
+    renderMasterGame();
+    if(gv.cls) document.getElementById("masterGameStudentTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  const clr = document.getElementById("masterGameClsClear");
+  if(clr) clr.addEventListener("click", () => { gv.cls = ""; renderMasterGame(); });
 }
 
 function masterGameCsv(){

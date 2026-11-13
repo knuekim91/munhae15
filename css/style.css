@@ -783,6 +783,11 @@ body.pre-login .mileage-chip{ display:none; }
 .master-row{ cursor:pointer; }
 .master-row:hover td{ background:var(--bg-soft); }
 .master-row.active td{ background:var(--accent-dim); }
+.master-grade-row td{ font-weight:800; }
+.master-grade-row.open td{ background:var(--bg-soft); }
+.master-caret{ display:inline-block; width:1.1em; color:var(--text-faint); }
+.master-subrow td:first-child{ padding-left:34px; }
+.master-row:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
 .master-test{ font-size:10.5px; font-weight:800; background:var(--bg-soft); color:var(--text-faint); border-radius:5px; padding:1px 6px; margin-left:4px; }
 .t-done{ color:var(--good); font-weight:800; }
 .t-access{ color:#c98400; font-weight:800; }
