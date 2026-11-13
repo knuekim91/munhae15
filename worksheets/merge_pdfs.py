@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-주차별 학습지 PDF(NN주차_..._DayK_학습지.pdf 160개)를 날짜순으로 합쳐
-'전체_학습지_모음(1-32주차).pdf' 한 파일로 만든다. 주차마다 책갈피("1주차" …)를 단다.
+주차별 학습지 PDF(NN주차_..._DayK_학습지.pdf 170개)를 날짜순으로 합쳐
+'전체_학습지_모음(1-34주차).pdf' 한 파일로 만든다. 주차마다 책갈피("1주차" …)를 단다.
 
 사용법:  python merge_pdfs.py
 (주차별 학습지를 다시 만든 뒤 한 번 실행하면 모음본이 최신으로 바뀐다)
@@ -14,7 +14,7 @@ import sys
 import pypdf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "전체_학습지_모음(1-32주차).pdf")
+OUT = os.path.join(HERE, "전체_학습지_모음(1-34주차).pdf")
 
 
 def week_files(week):
@@ -29,7 +29,7 @@ def week_files(week):
 
 def main():
     writer = pypdf.PdfWriter()
-    for week in range(1, 33):
+    for week in range(1, 35):
         start = len(writer.pages)
         for f in week_files(week):
             reader = pypdf.PdfReader(f)
