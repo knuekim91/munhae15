@@ -136,7 +136,7 @@ function openMasterDashboard(cred, data){
             <div id="masterSummary" class="master-summary"></div>
             <div id="masterGradeChips" class="master-chips"></div>
             <div class="master-section-title">반별 현황 <span class="master-hint">반을 누르면 학생 명단이 나와요</span></div>
-            <div class="score-table-wrap"><table class="score-table master-table" id="masterClassTable"></table></div>
+            <div class="score-table-wrap master-fit"><table class="score-table master-table" id="masterClassTable"></table></div>
             <div class="master-section-title" id="masterStudentTitle">학생 명단</div>
             <div class="master-controls">
               <select id="masterFilter" class="master-select" aria-label="보기 조건">
@@ -151,7 +151,7 @@ function openMasterDashboard(cred, data){
               </select>
               <input id="masterSearch" class="master-search" type="search" placeholder="이름 또는 학번 검색" autocomplete="off">
             </div>
-            <div class="score-table-wrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
+            <div class="score-table-wrap" id="masterStudentWrap"><table class="score-table master-table" id="masterStudentTable"></table></div>
             <p class="master-legend">주간 칸: ★ 08:30~08:45 안에 완료(위클리 행운아 자격) · ● 완료 · ◐ 접속만 · ○ 기록 없음 · · 아직 안 온 날 &nbsp;|&nbsp; 합계에서 테스트 반은 제외돼요.</p>
           </div>
           <div id="masterPagePeriod" hidden>
@@ -455,6 +455,17 @@ function renderMasterLucky(){
     <p class="master-legend">X = 그 주 자격자 없음 · - = 그 주 반별 추첨 기록이 없음(예전 방식으로 뽑았거나 나중에 생긴 반) · 이름(N회) = N번째 당첨 · 맨 아래가 가장 최근 주차예요.</p>`;
 }
 
+/** 학생 표 높이를 '가장 학생 수가 많은 반'이 스크롤 없이 다 보일 만큼으로 맞춘다(그보다 긴 전교·학년 목록만 스크롤) */
+function masterFitStudentWrap(wrap, classes){
+  if(!wrap) return;
+  wrap.style.maxHeight = "";
+  const maxN = (classes || []).reduce((m, c) => Math.max(m, c.enrolled || 0), 0);
+  const trs = wrap.querySelectorAll("tbody tr");
+  const th = wrap.querySelector("thead");
+  if(!trs.length || !th) return;
+  wrap.style.maxHeight = trs.length > maxN && maxN ? (th.offsetHeight + trs[0].offsetHeight * maxN + 2) + "px" : "none";   // 최대 반 인원 이내면 제한 없음
+}
+
 /* ---------------- 🎮 게임 참여 ---------------- */
 async function masterOpenGame(force){
   if(!MASTER) return;
@@ -548,13 +559,7 @@ function renderMasterGame(){
       <tbody>${caseRows || `<tr><td colspan="5" class="master-empty">아직 기록이 없어요.</td></tr>`}</tbody></table></div>
     <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 2점 이상(해결한) 판의 비율 · 점수 = 사건마다 가장 높은 점수의 합(참여하지 않으면 0점) · 순위는 점수가 같으면 공동이며 테스트 반은 순위와 전교 합계에서 빠져요.</p>`;
   // 학생 표 높이: 가장 학생 수가 많은 반을 한 화면에 다 보여 줄 만큼(그보다 많은 '전체 보기'만 스크롤)
-  const wrap = document.getElementById("masterGameStudentWrap");
-  const maxN = g.classes.reduce((m, c) => Math.max(m, c.enrolled || 0), 0);
-  const trs = wrap && wrap.querySelectorAll("tbody tr");
-  const th = wrap && wrap.querySelector("thead");
-  if(wrap && maxN && trs.length && th){
-    wrap.style.maxHeight = (th.offsetHeight + trs[0].offsetHeight * maxN + 2) + "px";
-  }
+  masterFitStudentWrap(document.getElementById("masterGameStudentWrap"), g.classes);
   const act = (el, fn) => {
     el.addEventListener("click", fn);
     el.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fn(); } });
@@ -775,6 +780,7 @@ function renderMasterStudents(){
   }).join("");
   table.innerHTML = `<thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>월 화 수 목 금</th><th>행운 자격</th><th>최근 활동</th><th>미활동</th></tr></thead>
     <tbody>${rows || `<tr><td colspan="7" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody>`;
+  masterFitStudentWrap(document.getElementById("masterStudentWrap"), MASTER.data.classes);
 }
 
 /* ---------------- CSV ---------------- */
