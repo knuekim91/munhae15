@@ -123,3 +123,20 @@ h1,h2,h3{ margin:0; }
   .spark{ display:none; }
 }
 @media (max-width:380px){ .bubble p{ font-size:15px; } .case-name{ font-size:15.5px; } }
+
+/* 오늘의 상태(게임 허브와 같은 규칙) */
+.status{ margin:0 0 14px; }
+.status.ok{ border-color:var(--good); background:var(--good-bg); }
+.status.warn{ border-color:var(--warn); }
+.status .sub{ margin:4px 0 10px; color:var(--text-dim); font-size:14px; }
+.status a.btn{ text-decoration:none; display:inline-block; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.chip2{ background:var(--bg-elevated); border:1px solid var(--border); border-radius:999px; padding:3px 11px; font-size:13px; font-weight:800; }
+.left-pill{ background:var(--accent-dim); color:var(--accent-text); border-radius:999px; padding:3px 10px; font-size:13px; font-weight:800; }
+.case-card.locked{ opacity:.55; }
+.reward-line{ margin:8px 0; padding:9px 12px; border-radius:var(--radius-md); background:var(--bg-soft); font-size:14.5px; text-align:left; }
+.reward-line.good{ background:var(--good-bg); color:var(--good); font-weight:700; }
+.toast{ position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px); background:var(--text); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:30; max-width:86vw; text-align:center; }
+.toast.show{ opacity:1; transform:translateX(-50%); }
+.case-card.daily{ border-color:var(--accent); background:linear-gradient(135deg, var(--accent-dim), var(--bg-elevated)); }
+.case-card.daily .case-no{ color:var(--accent-text); }

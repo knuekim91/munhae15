@@ -125,6 +125,7 @@ function openMasterDashboard(cred, data){
           <button type="button" class="master-nav-item" data-page="attendance">📋 출결 현황</button>
           <button type="button" class="master-nav-item" data-page="period">📈 월별·학기별</button>
           <button type="button" class="master-nav-item" data-page="lucky">🍀 위클리 행운아</button>
+          <button type="button" class="master-nav-item" data-page="game">🎮 게임 참여</button>
           <div class="master-nav-group">📝 정기고사</div>
           ${MASTER_EXAM_MENU.map(x => `<button type="button" class="master-nav-item master-nav-sub" data-page="exam:${x.id}">${x.label}</button>`).join("")}
         </nav>
@@ -180,6 +181,20 @@ function openMasterDashboard(cred, data){
             </div>
             <div id="masterLuckyBody"></div>
           </div>
+          <div id="masterPageGame" hidden>
+            <h2 class="master-page-title">🎮 게임 참여</h2>
+            <p class="master-note">그날 학습을 완료한 학생이 <b>하루 <span id="masterGameLimit">2</span>사건</b>까지 푸는 보너스 게임의 참여 현황이에요. 게임으로 번 마일리지는 담임 화면의 마일리지에 합쳐지고, 출결·진도율·위클리 행운아에는 영향을 주지 않아요.</p>
+            <div class="master-controls">
+              <select id="masterGameFilter" class="master-select" aria-label="보기 조건">
+                <option value="all">전체 학생</option><option value="today">오늘 참여</option>
+                <option value="notToday">오늘 미참여</option><option value="never">한 번도 안 함</option>
+              </select>
+              <input id="masterGameSearch" class="master-search" type="search" placeholder="이름 또는 학번 검색" autocomplete="off">
+              <button class="btn btn-ghost master-btn" id="masterGameRefresh" type="button">새로고침</button>
+              <button class="btn btn-ghost master-btn" id="masterGameCsv" type="button">CSV 내려받기</button>
+            </div>
+            <div id="masterGameBody"></div>
+          </div>
           <div id="masterPageExam" hidden></div>
         </main>
       </div>
@@ -221,15 +236,18 @@ function masterShowPage(key){
   const isAtt = key === "attendance";
   const isPeriod = key === "period";
   const isLucky = key === "lucky";
-  const isExam = !isAtt && !isPeriod && !isLucky;
+  const isGame = key === "game";
+  const isExam = !isAtt && !isPeriod && !isLucky && !isGame;
   document.getElementById("masterPageAttendance").hidden = !isAtt;
   document.getElementById("masterPagePeriod").hidden = !isPeriod;
   document.getElementById("masterPageLucky").hidden = !isLucky;
+  document.getElementById("masterPageGame").hidden = !isGame;
   document.getElementById("masterAttTools").classList.toggle("is-off", !isAtt);
   const exam = document.getElementById("masterPageExam");
   exam.hidden = !isExam;
   if(isPeriod) masterOpenPeriod();
   if(isLucky) masterOpenLucky();
+  if(isGame) masterOpenGame();
   if(isExam){
     const item = MASTER_EXAM_MENU.find(x => `exam:${x.id}` === key);
     const label = item ? `${item.term} ${item.name}` : "정기고사";
@@ -435,6 +453,97 @@ function renderMasterLucky(){
   }).join("");
   body.innerHTML = `<div class="score-table-wrap"><table class="score-table master-table master-lucky">${head}<tbody>${rows}</tbody></table></div>
     <p class="master-legend">X = 그 주 자격자 없음 · - = 그 주 반별 추첨 기록이 없음(예전 방식으로 뽑았거나 나중에 생긴 반) · 이름(N회) = N번째 당첨 · 맨 아래가 가장 최근 주차예요.</p>`;
+}
+
+/* ---------------- 🎮 게임 참여 ---------------- */
+async function masterOpenGame(force){
+  if(!MASTER) return;
+  const refresh = document.getElementById("masterGameRefresh");
+  if(!refresh.dataset.bound){
+    refresh.dataset.bound = "1";
+    refresh.addEventListener("click", () => masterOpenGame(true));
+    document.getElementById("masterGameCsv").addEventListener("click", masterGameCsv);
+    document.getElementById("masterGameFilter").addEventListener("change", renderMasterGame);
+    document.getElementById("masterGameSearch").addEventListener("input", renderMasterGame);
+  }
+  if(MASTER.game && !force){ renderMasterGame(); return; }
+  const body = document.getElementById("masterGameBody");
+  body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오는 중...</div></div>`;
+  const { id, pw } = MASTER.cred;
+  const result = await postToSheet({ action: "masterGame", masterId: id, masterPassword: pw });
+  if(!MASTER) return;
+  if(!result || result.status !== "ok"){
+    body.innerHTML = `<div class="master-soon"><div class="master-soon-title">불러오지 못했어요</div><p>${result && result.reason === "locked" ? "로그인 시도가 너무 많아 잠겼어요. 잠시 뒤에 다시 시도해 주세요." : "서버(Code.gs)를 새 버전으로 다시 배포했는지 확인해 주세요."}</p></div>`;
+    return;
+  }
+  MASTER.game = result;
+  renderMasterGame();
+}
+
+function masterGameStudents(){
+  const g = MASTER.game;
+  const f = document.getElementById("masterGameFilter").value;
+  const q = document.getElementById("masterGameSearch").value.trim();
+  return g.students.filter(s => {
+    if(f === "today" && !s.todayPlays) return false;
+    if(f === "notToday" && s.todayPlays) return false;
+    if(f === "never" && s.plays) return false;
+    if(q && !(`${s.grade}${s.cls}${("0" + s.number).slice(-2)}`.includes(q) || (s.name || "").includes(q) || `${s.grade}-${s.cls}-${s.number}`.includes(q))) return false;
+    return true;
+  });
+}
+
+function renderMasterGame(){
+  if(!MASTER || !MASTER.game) return;
+  const g = MASTER.game;
+  document.getElementById("masterGameLimit").textContent = g.limit;
+  const body = document.getElementById("masterGameBody");
+  const tile = (cls, label, value, sub) => `<div class="master-tile ${cls}"><div class="master-tile-num">${value}</div><div class="master-tile-label">${label}</div>${sub ? `<div class="master-tile-sub">${sub}</div>` : ""}</div>`;
+  const sc = g.school;
+  const tiles = `<div class="master-summary">
+    ${tile("is-done", "오늘 참여", sc.todayPlayers + "명", masterPct(sc.todayPlayers, sc.enrolled) + "% · " + sc.todayPlays + "판")}
+    ${tile("", "누적 참여 학생", sc.players + "명", masterPct(sc.players, sc.enrolled) + "% (재적 " + sc.enrolled + "명)")}
+    ${tile("", "누적 푼 사건", sc.plays + "판", "")}
+    ${tile("", "학생당 평균", sc.players ? (Math.round(sc.plays / sc.players * 10) / 10) + "판" : "-", "참여 학생 기준")}
+  </div>`;
+  const classRows = g.classes.map(c => `<tr>
+    <td>${c.grade}학년 ${c.cls}반${c.test ? ' <span class="master-test">테스트</span>' : ""}</td><td>${c.enrolled}</td>
+    <td>${c.todayPlayers}명</td><td>${c.players}명 (${masterPct(c.players, c.enrolled)}%)</td><td>${c.todayPlays}</td><td>${c.plays}</td>
+    <td>${c.players ? (Math.round(c.stars / c.players * 10) / 10) : "-"}</td></tr>`).join("");
+  const list = masterGameStudents();
+  const stuRows = list.map(s => `<tr>
+    <td>${s.grade}-${s.cls}-${s.number}</td><td>${masterEsc(s.name)}</td>
+    <td class="${s.todayPlays ? "t-done" : "t-none"}">${s.todayPlays ? "✅ " + s.todayPlays + "판" : "-"}</td>
+    <td>${s.plays}</td><td>${s.days}</td><td>⭐ ${s.stars}</td><td>${masterEsc(s.title)}</td><td>${s.last ? masterEsc(s.last) : "-"}</td></tr>`).join("");
+  const caseRows = g.cases.map(c => `<tr><td>${masterEsc(c.caseId)}</td><td>${c.plays}</td>
+    <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgStars}</td></tr>`).join("");
+  body.innerHTML = `${tiles}
+    <div class="master-section-title">반별 현황</div>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 별</th></tr></thead>
+      <tbody>${classRows || `<tr><td colspan="7" class="master-empty">등록된 학급이 없어요.</td></tr>`}</tbody></table></div>
+    <div class="master-section-title">학생별 (${list.length}명)</div>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>별 합계</th><th>칭호</th><th>마지막 참여</th></tr></thead>
+      <tbody>${stuRows || `<tr><td colspan="8" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody></table></div>
+    <div class="master-section-title">사건별 <span class="master-hint">새 사건을 만들 때 난이도 참고용이에요</span></div>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>사건</th><th>푼 판</th><th>해결률</th><th>별 3개 비율</th><th>평균 별</th></tr></thead>
+      <tbody>${caseRows || `<tr><td colspan="5" class="master-empty">아직 기록이 없어요.</td></tr>`}</tbody></table></div>
+    <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 별 1개 이상 받은 판의 비율 · 테스트 반은 전교 합계에서 빠져요.</p>`;
+}
+
+function masterGameCsv(){
+  if(!MASTER || !MASTER.game) return;
+  const list = masterGameStudents();
+  const lines = [["학년", "반", "번호", "이름", "오늘 판", "누적 판", "참여일", "별 합계", "칭호", "마지막 참여", "게임 마일리지"]]
+    .concat(list.map(s => [s.grade, s.cls, s.number, s.name, s.todayPlays, s.plays, s.days, s.stars, s.title, s.last, s.mileage]));
+  const csv = "\uFEFF" + lines.map(r => r.map(masterCsvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `게임참여_${MASTER.game.today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  toast(`게임 참여 현황 ${list.length}명을 내려받았어요.`);
 }
 
 /** 가장 최근 주차의 전교 발표문(교사 단톡방 등에 붙여넣기용) */

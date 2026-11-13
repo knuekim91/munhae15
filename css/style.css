@@ -497,6 +497,7 @@ body.pre-login .sidebar,
 body.pre-login #menuBtn,
 body.pre-login .topbar-progress,
 body.pre-login .streak-chip,
+body.pre-login .game-top,
 body.pre-login .mileage-chip{ display:none; }
 
 .login-wrap{ display:flex; justify-content:center; padding-top:6vh; }
@@ -923,4 +924,78 @@ td.master-cur{ background:var(--accent-dim); font-weight:800; color:var(--accent
 @media (max-width: 360px){
   .profile-avatar{ display:none; }
   .profile-label{ max-width:48px; }
+}
+
+
+/* ---------- 🎮 게임: 사이드바 맨 위 GAME 아이콘 + 허브 ---------- */
+.game-nav{
+  display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text);
+  margin:0 0 12px; padding:10px 12px; border-radius:16px;
+  background:linear-gradient(135deg, var(--accent-dim), var(--bg-soft));
+  border:1.5px solid var(--border); transition:.15s;
+}
+.game-nav:hover{ border-color:var(--accent); transform:translateY(-1px); }
+.game-nav.active{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+.game-logo{
+  position:relative; overflow:hidden; flex:none;
+  font-family:"Arial Black", Impact, var(--font); font-weight:900; font-size:15px; letter-spacing:1.5px;
+  color:#fff; padding:8px 10px; border-radius:11px; transform:rotate(-4deg);
+  background:linear-gradient(135deg, #ff6b8b, #7c5cff 55%, #3dc7ff);
+  box-shadow:0 3px 10px rgba(124,92,255,.35); text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.game-logo::after{
+  content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+  transform:skewX(-20deg); animation:gameShine 3.4s ease-in-out infinite;
+}
+@keyframes gameShine{ 0%,55%{ left:-60%; } 85%,100%{ left:130%; } }
+.game-nav-text{ display:flex; flex-direction:column; line-height:1.25; min-width:0; flex:1; }
+.game-nav-text b{ font-size:15px; }
+.game-nav-text small{ font-size:11.5px; color:var(--text-dim); font-weight:600; }
+.game-nav-go{ color:var(--accent-text); font-size:13px; }
+@media (prefers-reduced-motion: reduce){ .game-logo::after{ animation:none; display:none; } }
+
+.game-status{ margin-bottom:14px; }
+.game-status-main{ font-size:18px; font-weight:800; margin-bottom:4px; }
+.game-status-open{ border-color:var(--good); background:var(--good-bg); }
+.game-status-lock{ border-color:var(--warn); }
+.game-status-warn{ border-color:var(--bad); }
+.game-note{ margin:4px 0 12px; color:var(--text-dim); font-size:14.5px; }
+.game-stats{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.game-chip{ background:var(--bg-elevated); border:1px solid var(--border); border-radius:999px; padding:3px 11px; font-size:13px; font-weight:800; }
+.game-section-title{ font-size:14px; font-weight:800; color:var(--text-dim); margin:18px 2px 8px; }
+.game-card{ display:flex; align-items:center; gap:14px; }
+.game-card-off{ opacity:.55; }
+.game-card-ico{ font-size:32px; width:56px; height:56px; border-radius:18px; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; flex:none; }
+.game-card-body{ flex:1; min-width:0; }
+.game-card-name{ font-size:17px; font-weight:800; }
+.game-card-desc{ font-size:13.5px; color:var(--text-dim); }
+.game-go{ text-decoration:none; flex:none; }
+.game-lock{ font-size:22px; }
+.game-rule ul{ margin:6px 0 0; padding-left:18px; color:var(--text-dim); font-size:14px; line-height:1.7; }
+.game-rule b{ color:var(--text); }
+.admin-game-title{ color:var(--text-faint); font-size:12px; font-weight:700; margin-left:2px; }
+
+/* 상단바의 GAME 글자 아이콘: 항상 보이는 게임 입구 */
+.game-top{ display:inline-flex; align-items:center; text-decoration:none; margin-right:4px; flex:none; }
+.game-top .game-logo{ font-size:13px; padding:6px 9px; border-radius:10px; }
+.game-top:hover .game-logo{ transform:rotate(-4deg) scale(1.08); }
+@media (max-width: 520px){
+  .game-top{ margin-right:0; }
+  .game-top .game-logo{ font-size:10.5px; padding:5px 6px; letter-spacing:.8px; border-radius:8px; }
+  .profile-avatar{ display:none; }          /* GAME 글자가 들어갈 자리를 만들려고 좁은 화면에서는 이름 옆 동그라미를 숨긴다 */
+}
+@media (max-width: 400px){
+  .topbar{ padding:0 6px; gap:4px; }
+  .topbar-actions{ gap:2px; }
+  .game-top .game-logo{ font-size:9.5px; padding:4px 5px; letter-spacing:.5px; }
+  .streak-chip, .mileage-chip{ padding:5px 6px; font-size:12px; }
+  .topbar-actions .icon-btn{ width:28px; }
+  .profile-label{ max-width:44px; }
+}
+@media (max-width: 380px){
+  .profile-label{ max-width:36px; }
+}
+@media (max-width: 340px){
+  .game-top{ display:none; }                /* 아주 작은 화면은 사이드바 맨 위 GAME 항목을 쓴다 */
 }

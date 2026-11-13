@@ -117,7 +117,9 @@ function renderAdminPanel(adminPassword, grade, cls, list, lucky){
     <tr>
       <td>${s.grade}-${s.cls}-${s.number}</td>
       <td>${adminEsc(s.name || "")}${(lucky && lucky.latest && lucky.latest.name && s.number === lucky.latest.number) ? ' 🍀' : ''}</td>
-      <td>🪙 ${s.mileage || 0}</td>
+      <td title="학습 + 게임 마일리지 합계${s.gameMileage ? ` (게임 ${s.gameMileage}P)` : ""}">🪙 ${s.mileage || 0}</td>
+      <td class="${(s.gameToday || 0) ? "t-done" : ""}">${adminGameToday(s)}</td>
+      <td>${adminGameTotal(s)}</td>
       <td>${s.progressRate}% (${s.completedDays}/${s.totalDays}일)</td>
       <td>${s.lastLogin || "-"}</td>
       <td>${s.passwordSet ? "✅ 설정함" : "⚪ 기본값(2026)"}</td>
@@ -133,15 +135,15 @@ function renderAdminPanel(adminPassword, grade, cls, list, lucky){
         <button class="icon-btn" id="closeAdminModalBtn">✕</button>
       </div>
       <p class="login-sub" style="margin-bottom:12px;">
-        마일리지 순으로 정렬되어 있어요. 진도율은 학교 전체 최고 진도 대비 비율이에요.
+        마일리지 순으로 정렬되어 있어요(게임으로 번 마일리지 포함). 🎮는 보너스 게임 참여로, 오늘 푼 사건 수와 누적 판 수·별·칭호예요. 진도율은 학교 전체 최고 진도 대비 비율이에요.
         학생이 비밀번호를 잊었으면 초기화하세요.
       </p>
       ${adminLuckyBanner(lucky)}
       <button id="adminBackBtn" class="btn btn-ghost" style="margin-bottom:12px;">‹ 학년·반 다시 입력</button>
       <div class="score-table-wrap admin-table-wrap">
         <table class="score-table">
-          <thead><tr><th>학번</th><th>이름</th><th>마일리지</th><th>진도율</th><th>최근 로그인</th><th>비밀번호</th><th></th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="7">해당 학급에 등록된 학생이 없어요.</td></tr>`}</tbody>
+          <thead><tr><th>학번</th><th>이름</th><th>마일리지</th><th>🎮 오늘</th><th>🎮 누적</th><th>진도율</th><th>최근 로그인</th><th>비밀번호</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="9">해당 학급에 등록된 학생이 없어요.</td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
@@ -175,6 +177,17 @@ async function resetStudentPassword(adminPassword, btn){
   }
 }
 
+
+/** 오늘 게임 참여: 푼 사건 수 / 하루 한도(2) */
+function adminGameToday(s){
+  const n = s.gameToday || 0;
+  return n ? `✅ ${n}판` : "-";
+}
+/** 누적 게임 참여: 판 수 · 별 합계 · 칭호 */
+function adminGameTotal(s){
+  if(!s.gamePlays) return "-";
+  return `${s.gamePlays}판 · ⭐${s.gameStars || 0} <span class="admin-game-title">${adminEsc(s.gameTitle || "")}</span>`;
+}
 
 function adminEsc(v){
   return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

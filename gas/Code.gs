@@ -29,6 +29,8 @@ function doPost(e) {
       case "masterDashboard": result = handleMasterDashboard_(data); break;
       case "masterPeriodStats": result = handleMasterPeriodStats_(data); break;
       case "masterLucky": result = handleMasterLucky_(data); break;
+      case "masterGame": result = handleMasterGame_(data); break;
+      case "gameResult": result = handleGameResult_(data); break;
       case "examStart": result = handleExamStart_(data); break;
       case "examSave": result = handleExamSave_(data); break;
       case "examSubmit": result = handleExamSubmit_(data); break;
@@ -52,6 +54,10 @@ function doGet(e) {
   }
   if (e.parameter && e.parameter.examStatus) {
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", exams: getExamStatusList_(), serverNow: Date.now() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  if (e.parameter && e.parameter.gameStatus) {
+    return ContentService.createTextOutput(JSON.stringify(handleGameStatus_(e.parameter)))
       .setMimeType(ContentService.MimeType.JSON);
   }
   if (e.parameter && e.parameter.luckyNotice) {
@@ -591,6 +597,7 @@ function handleAdminStatus_(data) {
   var mileageMap = getMileageTotals_();
   var completedMap = getCompletedDayCounts_();
   var totalDays = getSchoolwideDayCount_();
+  var gameMap = getGameSummary_(kstToday_()).byStudent;
 
   var list = [];
   for (var r = 1; r < rosterValues.length; r++) {
@@ -601,11 +608,19 @@ function handleAdminStatus_(data) {
     var id = studentId_(grade, cls, number);
     var acc = accountMap[id] || { set: false, lastLogin: "" };
     var completedDays = completedMap[id] || 0;
+    var gm = gameMap[id];
+    var gStars = gm ? gameStarSum_(gm.best) : 0;
     list.push({
       grade: grade, cls: cls, number: number, name: name,
       passwordSet: acc.set,
       lastLogin: acc.lastLogin,
-      mileage: mileageMap[id] || 0,
+      mileage: (mileageMap[id] || 0) + (gm ? gm.mileage : 0),
+      gameMileage: gm ? gm.mileage : 0,
+      gamePlays: gm ? gm.plays : 0,
+      gameDays: gm ? Object.keys(gm.days).length : 0,
+      gameStars: gStars,
+      gameToday: gm ? gm.todayPlays : 0,
+      gameTitle: gameTitle_(gStars),
       completedDays: completedDays,
       totalDays: totalDays,
       progressRate: totalDays ? Math.round((completedDays / totalDays) * 100) : 0
@@ -1761,4 +1776,248 @@ function getClassLucky_(grade, cls) {
   });
   if (!hist.length) return null;
   return { latest: hist[hist.length - 1], history: hist.slice(-5).reverse() };
+}
+
+
+/* =========================================================================
+   게임(수상한 단톡방 등) — 하루 사건 수 제한 · 마일리지 보상 · 참여 현황
+   - 학습 회차를 오늘 완료한 학생만 게임을 할 수 있고(서버가 "기록" 시트로 확인),
+     하루에 GAME_DAILY_LIMIT 사건까지 풀 수 있습니다(해결하든 실패하든 한 판으로 셉니다).
+   - 보상은 서버가 계산합니다. 사건마다 "새 최고 별"을 달성했을 때만 차액을 줍니다.
+     (같은 사건을 다시 풀어도 보상이 쌓이지 않으므로 반복해서 점수를 모을 수 없습니다.)
+   - 기록은 "게임기록" 시트(없으면 자동 생성)에 한 판마다 한 줄씩 쌓입니다.
+   - 학습 기록("기록" 시트)에는 섞지 않습니다. 진도율·출결·위클리 행운아에 영향을 주지 않기 위해서입니다.
+   ========================================================================= */
+
+var GAME_SHEET_NAME = "게임기록";
+var GAME_HEADER = ["기록시각(KST)", "학번코드", "학년", "반", "번호", "이름", "게임", "사건ID", "결과", "별", "실수", "힌트", "마일리지", "플레이ID"];
+var GAME_DAILY_LIMIT = 2;                  // 하루에 풀 수 있는 사건 수
+var GAME_STAR_MILEAGE = [0, 0, 2, 5];      // 사건 하나에서 별 0·1·2·3개 달성 시 누적 보상(P). 새 최고 별일 때 차액만 지급
+var GAME_IDS = ["chat-detective"];
+var GAME_TITLES = [[0, "🔍 수습 탐정"], [6, "🕶️ 주니어 탐정"], [15, "🕵️ 베테랑 탐정"], [30, "🏅 명탐정"]];   // [별 합계, 칭호]
+
+function gameTitle_(stars) {
+  var t = GAME_TITLES[0][1];
+  for (var i = 0; i < GAME_TITLES.length; i++) if (stars >= GAME_TITLES[i][0]) t = GAME_TITLES[i][1];
+  return t;
+}
+
+function getGameSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(GAME_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(GAME_SHEET_NAME);
+    sheet.appendRow(GAME_HEADER);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function kstToday_() {
+  return Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+}
+
+/** 학년·반·번호(+선택적 학번코드)로 명렬에 있는 학생인지 확인. 없거나 학번코드가 맞지 않으면 null */
+function gameStudent_(p) {
+  var g = Number(p.grade), c = Number(p.cls), n = Number(p.number);
+  if (!g || !c || !n) return null;
+  var id = studentId_(g, c, n);
+  if (p.studentId !== undefined && p.studentId !== null && String(p.studentId) !== id) return null;
+  var name = findRosterName_(g, c, n);
+  if (name === null) return null;
+  return { id: id, grade: g, cls: c, number: n, name: String(name || "") };
+}
+
+/** 이 학생이 오늘(KST) 학습 회차를 하나라도 완료했는가("기록" 시트에 오늘 줄이 있는가) */
+function gameLearnedToday_(sid, today) {
+  var cache = CacheService.getScriptCache();
+  var key = "gl:" + sid + ":" + today;
+  if (cache.get(key)) return true;
+  var sheet = getSheet_();
+  var last = sheet.getLastRow();
+  if (last < 2) return false;
+  var v = sheet.getRange(2, 1, last - 1, 2).getValues();
+  var yesterdayMs = ymdToUtcMs_(today) - 86400000;
+  for (var i = v.length - 1; i >= 0; i--) {
+    var d = tsToDateAndTime_(v[i][0]).date;
+    if (d.length === 10 && ymdToUtcMs_(d) < yesterdayMs - 86400000) break;   // 시각이 조금 어긋난 줄이 있어도 놓치지 않게 이틀 전까지만 거슬러 본다
+    if (String(v[i][1]) === sid && d === today) { cache.put(key, "1", 21600); return true; }
+  }
+  return false;
+}
+
+/** 학생 한 명의 게임 상태: 오늘 푼 판 수, 사건별 최고 별, 게임으로 번 마일리지 */
+function getGameState_(sid, today) {
+  var cache = CacheService.getScriptCache();
+  var key = "gs:" + sid;
+  var raw = cache.get(key);
+  if (raw) {
+    var cached = safeJsonParse_(raw);
+    if (cached && cached.date === today) return cached;
+  }
+  var st = { date: today, plays: 0, best: {}, mileage: 0 };
+  var sheet = getGameSheet_();
+  var last = sheet.getLastRow();
+  if (last >= 2) {
+    var v = sheet.getRange(2, 1, last - 1, GAME_HEADER.length).getValues();
+    for (var i = 0; i < v.length; i++) {
+      if (String(v[i][1]) !== sid) continue;
+      if (tsToDateAndTime_(v[i][0]).date === today) st.plays++;
+      var cid = String(v[i][7]);
+      var stars = Number(v[i][9]) || 0;
+      if (stars > (st.best[cid] || 0)) st.best[cid] = stars;
+      st.mileage += Number(v[i][12]) || 0;
+    }
+  }
+  cache.put(key, JSON.stringify(st), 21600);
+  return st;
+}
+
+function gameStarSum_(best) {
+  var n = 0;
+  for (var k in best) n += Number(best[k]) || 0;
+  return n;
+}
+
+function gameStatusOf_(student, today, st, learned) {
+  var totalStars = gameStarSum_(st.best);
+  return {
+    status: "ok", date: today, name: student.name, learned: !!learned,
+    plays: st.plays, limit: GAME_DAILY_LIMIT, playsLeft: Math.max(0, GAME_DAILY_LIMIT - st.plays),
+    best: st.best, totalStars: totalStars, title: gameTitle_(totalStars), mileage: st.mileage,
+    reward: GAME_STAR_MILEAGE
+  };
+}
+
+function handleGameStatus_(p) {
+  var student = gameStudent_(p);
+  if (!student) return { status: "error", reason: "student" };
+  var today = kstToday_();
+  return gameStatusOf_(student, today, getGameState_(student.id, today), gameLearnedToday_(student.id, today));
+}
+
+function handleGameResult_(data) {
+  var student = gameStudent_(data);
+  if (!student) return { status: "error", reason: "student" };
+  var game = String(data.game || "chat-detective");
+  if (GAME_IDS.indexOf(game) < 0) return { status: "error", reason: "game" };
+  var caseId = String(data.caseId || "");
+  if (!/^[a-z0-9\-]{1,30}$/i.test(caseId)) return { status: "error", reason: "case" };
+  var stars = Number(data.stars);
+  if (stars !== 0 && stars !== 1 && stars !== 2 && stars !== 3) return { status: "error", reason: "stars" };
+  var lost = Number(data.lost);
+  lost = isNaN(lost) ? 0 : Math.max(0, Math.min(3, Math.floor(lost)));
+  var playId = String(data.playId || "").replace(/[^a-zA-Z0-9\-]/g, "").slice(0, 40);
+
+  var cache = CacheService.getScriptCache();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (playId) {
+      var dup = cache.get("gp:" + playId);
+      if (dup) return safeJsonParse_(dup);             // 같은 판을 두 번 보내도 한 번만 기록
+    }
+    var today = kstToday_();
+    if (!gameLearnedToday_(student.id, today)) return { status: "error", reason: "not_learned" };
+    var st = getGameState_(student.id, today);
+    if (st.plays >= GAME_DAILY_LIMIT) return { status: "error", reason: "limit", plays: st.plays, limit: GAME_DAILY_LIMIT };
+
+    var prev = st.best[caseId] || 0;
+    var newBest = Math.max(prev, stars);
+    var reward = GAME_STAR_MILEAGE[newBest] - GAME_STAR_MILEAGE[prev];
+    if (/^daily-/.test(caseId) && caseId !== "daily-" + today.replace(/-/g, "")) reward = 0;   // 지난 날의 '오늘의 사건'은 보상 없음
+
+    var stamp = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+    getGameSheet_().appendRow([stamp, student.id, student.grade, student.cls, student.number, student.name,
+      game, caseId, stars > 0 ? "해결" : "실패", stars, lost, data.hint ? "Y" : "", reward, playId]);
+    st.plays++;
+    st.best[caseId] = newBest;
+    st.mileage += reward;
+    cache.put("gs:" + student.id, JSON.stringify(st), 21600);
+
+    var res = gameStatusOf_(student, today, st, true);
+    res.gained = reward;
+    res.newBest = newBest > prev;
+    if (playId) cache.put("gp:" + playId, JSON.stringify(res), 21600);
+    return res;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** 게임기록 전체를 한 번 읽어 학생별·사건별로 집계 (관리자·마스터 화면용) */
+function getGameSummary_(today) {
+  var byStudent = {}, byCase = {};
+  var sheet = getGameSheet_();
+  var last = sheet.getLastRow();
+  if (last < 2) return { byStudent: byStudent, byCase: byCase };
+  var v = sheet.getRange(2, 1, last - 1, GAME_HEADER.length).getValues();
+  for (var i = 0; i < v.length; i++) {
+    var sid = String(v[i][1]);
+    var date = tsToDateAndTime_(v[i][0]).date;
+    var cid = String(v[i][7]);
+    var stars = Number(v[i][9]) || 0;
+    var s = byStudent[sid];
+    if (!s) s = byStudent[sid] = { plays: 0, days: {}, best: {}, mileage: 0, last: "", todayPlays: 0 };
+    s.plays++;
+    s.days[date] = true;
+    if (stars > (s.best[cid] || 0)) s.best[cid] = stars;
+    s.mileage += Number(v[i][12]) || 0;
+    if (date > s.last) s.last = date;
+    if (date === today) s.todayPlays++;
+    var c = byCase[cid];
+    if (!c) c = byCase[cid] = { plays: 0, solved: 0, perfect: 0, starSum: 0 };
+    c.plays++;
+    if (stars > 0) c.solved++;
+    if (stars === 3) c.perfect++;
+    c.starSum += stars;
+  }
+  return { byStudent: byStudent, byCase: byCase };
+}
+
+/** 마스터: 전교 게임 참여 현황 (오늘 참여, 누적, 반별, 학생별, 사건별 난이도) */
+function handleMasterGame_(data) {
+  var auth = checkMaster_(data);
+  if (!auth.ok) return { status: "error", reason: auth.reason };
+  var today = kstToday_();
+  var target = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || "")) ? String(data.date) : today;
+  var sum = getGameSummary_(target);
+  var rosterValues = getRosterSheet_().getDataRange().getValues();
+  var students = [], classMap = {};
+  var seen = {};
+  for (var r = 1; r < rosterValues.length; r++) {
+    var g = Number(rosterValues[r][0]), c = Number(rosterValues[r][1]), n = Number(rosterValues[r][2]);
+    if (!g || !c || !n) continue;
+    var id = studentId_(g, c, n);
+    if (seen[id]) continue;
+    seen[id] = true;
+    var s = sum.byStudent[id];
+    var stars = s ? gameStarSum_(s.best) : 0;
+    var isTest = EXAM_STAT_EXCLUDE_CLASSES.indexOf(c) >= 0;
+    students.push({
+      grade: g, cls: c, number: n, name: String(rosterValues[r][3] || ""), test: isTest,
+      plays: s ? s.plays : 0, days: s ? Object.keys(s.days).length : 0, stars: stars,
+      title: gameTitle_(stars), todayPlays: s ? s.todayPlays : 0, last: s ? s.last : "", mileage: s ? s.mileage : 0
+    });
+    var key = g + "-" + c;
+    var cm = classMap[key];
+    if (!cm) cm = classMap[key] = { grade: g, cls: c, test: isTest, enrolled: 0, players: 0, todayPlayers: 0, plays: 0, todayPlays: 0, stars: 0 };
+    cm.enrolled++;
+    if (s) { cm.players++; cm.plays += s.plays; cm.stars += stars; }
+    if (s && s.todayPlays > 0) { cm.todayPlayers++; cm.todayPlays += s.todayPlays; }
+  }
+  students.sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls || a.number - b.number; });
+  var classes = Object.keys(classMap).map(function (k) { return classMap[k]; })
+    .sort(function (a, b) { return a.grade - b.grade || a.cls - b.cls; });
+  var school = { enrolled: 0, players: 0, todayPlayers: 0, plays: 0, todayPlays: 0 };
+  classes.forEach(function (cm) {
+    if (cm.test) return;
+    school.enrolled += cm.enrolled; school.players += cm.players; school.todayPlayers += cm.todayPlayers;
+    school.plays += cm.plays; school.todayPlays += cm.todayPlays;
+  });
+  var cases = Object.keys(sum.byCase).map(function (k) {
+    var c2 = sum.byCase[k];
+    return { caseId: k, plays: c2.plays, solved: c2.solved, perfect: c2.perfect, avgStars: c2.plays ? Math.round((c2.starSum / c2.plays) * 10) / 10 : 0 };
+  }).sort(function (a, b) { return b.plays - a.plays; });
+  return { status: "ok", date: target, today: today, limit: GAME_DAILY_LIMIT, school: school, classes: classes, students: students, cases: cases };
 }

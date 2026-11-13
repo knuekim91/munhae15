@@ -176,6 +176,14 @@ function renderSidebar(){
   nav.innerHTML = "";
   const currentId = location.hash.replace("#","") || "";
 
+  if(typeof renderGameRoute === "function"){
+    const gameLink = document.createElement("a");
+    gameLink.className = "game-nav" + (currentId === "game" ? " active" : "");
+    gameLink.href = "#game";
+    gameLink.innerHTML = `<span class="game-logo" aria-hidden="true">GAME</span><span class="game-nav-text"><b>게임</b><small>학습 후 하루 2사건</small></span><span class="game-nav-go">▶</span>`;
+    nav.appendChild(gameLink);
+  }
+
   if(typeof APP_CONFIG !== "undefined" && APP_CONFIG.WORKSHEETS_PDF_URL){
     const resourceGroup = document.createElement("div");
     resourceGroup.className = "week-group resource-group open";
@@ -300,6 +308,14 @@ function router(){
     content.innerHTML = "";
     content.scrollTop = 0; window.scrollTo(0,0);
     renderExamRoute(content, id.slice(5));
+    renderSidebar();
+    return;
+  }
+  if(id === "game" && typeof renderGameRoute === "function"){
+    if(typeof leaveExamRoute === "function") leaveExamRoute();
+    content.innerHTML = "";
+    content.scrollTop = 0; window.scrollTo(0,0);
+    renderGameRoute(content);
     renderSidebar();
     return;
   }
