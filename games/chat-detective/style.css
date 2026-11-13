@@ -140,3 +140,7 @@ h1,h2,h3{ margin:0; }
 .toast.show{ opacity:1; transform:translateX(-50%); }
 .case-card.daily{ border-color:var(--accent); background:linear-gradient(135deg, var(--accent-dim), var(--bg-elevated)); }
 .case-card.daily .case-no{ color:var(--accent-text); }
+.heart-score{ display:flex; flex-direction:column; align-items:flex-end; font-size:13px; letter-spacing:0; }
+.heart-score small{ font-size:11.5px; font-weight:800; color:var(--text-dim); }
+.point-line{ font-size:16px; margin:-2px 0 4px; } .point-line b{ font-size:24px; color:var(--accent-text); } .point-line span{ color:var(--text-faint); font-weight:700; }
+.big-stars{ font-size:30px; letter-spacing:3px; }

@@ -9,6 +9,8 @@ const GAME_LIST = [
 ];
 
 let GAME_STATUS_CACHE = null;    // 허브를 다시 열 때 깜빡임을 줄이기 위한 최근 상태
+let GAME_RANK_CACHE = null;
+let GAME_RANK_TAB = "school";   // 랭킹 탭: school(전교) / class(우리 반)
 
 async function fetchGameStatus(){
   const url = endpointUrl();
@@ -24,6 +26,21 @@ async function fetchGameStatus(){
     return data;
   }catch(e){
     return { status: "error", reason: "network" };
+  }
+}
+
+async function fetchGameRanking(){
+  const url = endpointUrl();
+  const st = getStudent();
+  if(!url || !st) return null;
+  try{
+    const q = `gameRanking=1&grade=${encodeURIComponent(st.grade)}&cls=${encodeURIComponent(st.cls)}&number=${encodeURIComponent(st.number)}&studentId=${encodeURIComponent(st.id)}`;
+    const res = await fetch(`${url}?${q}`);
+    if(!res.ok) return null;
+    const d = await res.json();
+    return (d && d.status === "ok") ? d : null;
+  }catch(e){
+    return null;
   }
 }
 
@@ -45,6 +62,11 @@ function renderGameRoute(content){
     GAME_STATUS_CACHE = s;
     const live = document.getElementById("gameHubBody");
     if(live) paintGameHub(live, s);
+    if(s.status === "ok") fetchGameRanking().then(r => {
+      GAME_RANK_CACHE = r;
+      const again = document.getElementById("gameHubBody");
+      if(again && r) paintGameHub(again, s);
+    });
   });
 }
 
@@ -81,6 +103,7 @@ function paintGameHub(box, s){
       <p class="game-note">오늘 남은 사건 <b>${s.playsLeft}</b> / ${s.limit}개</p>${gameStatsLine(s)}</div>`;
   }
 
+  const rankCard = gameRankCard(GAME_RANK_CACHE);
   const cards = GAME_LIST.map(g => `
     <div class="card game-card${open ? "" : " game-card-off"}">
       <div class="game-card-ico">${g.icon}</div>
@@ -94,13 +117,15 @@ function paintGameHub(box, s){
   box.innerHTML = `${banner}
     <div class="game-section-title">플레이할 게임</div>
     ${cards}
+    ${rankCard}
     <div class="card game-rule">
       <div class="game-section-title" style="margin-top:0">보상과 규칙</div>
       <ul>
-        <li>사건 하나에서 <b>별 3개</b>(실수·힌트 없이 해결)를 처음 받으면 <b>+${reward[3]}P</b>, 별 2개는 <b>+${reward[2]}P</b> 마일리지가 쌓여요.</li>
-        <li>같은 사건을 다시 풀어 별이 늘어나면 늘어난 만큼만 더 받아요. 이미 받은 별은 반복해서 받을 수 없어요.</li>
+        <li><b>하트 점수는 1~5점</b>이에요. 실수·힌트 없이 풀면 <b>5점</b>, 실수 1번이나 힌트 1번마다 1점씩 줄어요(해결하면 최저 2점). 실패해도 참여한 판은 <b>1점</b>이고, 게임에 참여하지 않으면 <b>0점</b>이에요.</li>
+        <li>마일리지: 사건마다 새 최고 점수일 때만 쌓여요 — 3점 <b>+${reward[3]}P</b>, 4점 <b>+${reward[4]}P</b>, 5점 <b>+${reward[5]}P</b>(점수가 올라가면 차액만). 같은 사건을 반복해도 더 쌓이지 않아요.</li>
+        <li>랭킹 점수는 <b>사건마다 가장 높은 점수의 합</b>이에요. 날마다 새로 나오는 "오늘의 사건"을 그날 풀어야 점수가 늘어요. 점수가 같으면 공동 순위예요.</li>
         <li>해결하든 실패하든 사건 하나를 풀면 한 판으로 세요. 하루에 ${s.limit || 2}판까지예요.</li>
-        <li>별을 모을수록 칭호가 올라가요: 🔍 수습 → 🕶️ 주니어 → 🕵️ 베테랑 → 🏅 명탐정</li>
+        <li>점수를 모을수록 칭호가 올라가요: 🔍 수습 → 🕶️ 주니어(12점) → 🕵️ 베테랑(40점) → 🏅 명탐정(100점)</li>
         <li>게임으로 번 마일리지도 학습 마일리지와 같은 곳에 합쳐져요. 위클리 행운아 추첨에는 영향이 없어요.</li>
       </ul>
     </div>`;
@@ -111,7 +136,37 @@ function paintGameHub(box, s){
 function gameStatsLine(s){
   return `<div class="game-stats">
     <span class="game-chip">${gameEsc(s.title || "")}</span>
-    <span class="game-chip">⭐ ${s.totalStars || 0}</span>
+    <span class="game-chip">❤️ ${s.totalPoints || 0}점</span>
     <span class="game-chip">🪙 게임 ${s.mileage || 0}P</span>
   </div>`;
 }
+
+/** 랭킹 카드: 내 순위 + 전교/우리 반 상위 목록(이름은 서버 설정에 따라 가려서 나온다) */
+function gameRankCard(r){
+  if(!r) return "";
+  const tab = GAME_RANK_TAB === "class" ? "class" : "school";
+  const list = tab === "school" ? (r.top || []) : (r.classTop || []);
+  const mine = r.myPlayed
+    ? `<div class="game-rank-me">내 순위 <b>전교 ${r.schoolRank}위</b> / ${r.schoolTotal}명 · <b>우리 반 ${r.classRank}위</b> / ${r.classTotal}명 · ❤️ ${r.myPoints}점</div>`
+    : `<div class="game-rank-me">아직 참여 기록이 없어 <b>0점</b>이에요. 오늘 한 판만 해도 1점부터 시작해요! (순위 ${r.schoolRank}위 · 공동)</div>`;
+  const rows = list.length
+    ? list.map(x => `<tr><td class="rk">${x.rank <= 3 ? ["🥇", "🥈", "🥉"][x.rank - 1] : x.rank}</td><td>${tab === "school" ? gameEsc(x.grade + "-" + x.cls) + " " : ""}${gameEsc(x.name)}${tab === "class" ? " <small>" + gameEsc(x.number) + "번</small>" : ""}</td><td class="pt">${x.points}점</td></tr>`).join("")
+    : `<tr><td colspan="3" class="game-rank-empty">아직 랭킹이 없어요. 첫 번째 주인공이 되어 보세요!</td></tr>`;
+  return `<div class="card game-rank">
+    <div class="game-section-title" style="margin-top:0">🏆 랭킹 <span class="game-rank-sub">사건별 최고 점수의 합 · 같으면 공동 순위</span></div>
+    ${mine}
+    <div class="game-rank-tabs">
+      <button type="button" class="game-rank-tab${tab === "school" ? " on" : ""}" data-tab="school">전교</button>
+      <button type="button" class="game-rank-tab${tab === "class" ? " on" : ""}" data-tab="class">우리 반</button>
+    </div>
+    <table class="game-rank-table"><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest(".game-rank-tab");
+  if(!b) return;
+  GAME_RANK_TAB = b.dataset.tab;
+  const box = document.getElementById("gameHubBody");
+  if(box && GAME_STATUS_CACHE) paintGameHub(box, GAME_STATUS_CACHE);
+});

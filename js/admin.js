@@ -135,7 +135,7 @@ function renderAdminPanel(adminPassword, grade, cls, list, lucky){
         <button class="icon-btn" id="closeAdminModalBtn">✕</button>
       </div>
       <p class="login-sub" style="margin-bottom:12px;">
-        마일리지 순으로 정렬되어 있어요(게임으로 번 마일리지 포함). 🎮는 보너스 게임 참여로, 오늘 푼 사건 수와 누적 판 수·별·칭호예요. 진도율은 학교 전체 최고 진도 대비 비율이에요.
+        마일리지 순으로 정렬되어 있어요(게임으로 번 마일리지 포함). 🎮는 보너스 게임 참여로, 오늘 푼 사건 수와 누적 판 수·하트 점수·전교 순위·칭호예요(참여하지 않으면 0점). 진도율은 학교 전체 최고 진도 대비 비율이에요.
         학생이 비밀번호를 잊었으면 초기화하세요.
       </p>
       ${adminLuckyBanner(lucky)}
@@ -183,10 +183,10 @@ function adminGameToday(s){
   const n = s.gameToday || 0;
   return n ? `✅ ${n}판` : "-";
 }
-/** 누적 게임 참여: 판 수 · 별 합계 · 칭호 */
+/** 누적 게임 참여: 판 수 · 하트 점수 · 전교 순위 · 칭호 (참여하지 않았으면 0점) */
 function adminGameTotal(s){
-  if(!s.gamePlays) return "-";
-  return `${s.gamePlays}판 · ⭐${s.gameStars || 0} <span class="admin-game-title">${adminEsc(s.gameTitle || "")}</span>`;
+  if(!s.gamePlays) return "0점";
+  return `${s.gamePlays}판 · ❤️${s.gamePoints || 0}점${s.gameRank ? ` · 전교 ${s.gameRank}위` : ""} <span class="admin-game-title">${adminEsc(s.gameTitle || "")}</span>`;
 }
 
 function adminEsc(v){

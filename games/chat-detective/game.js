@@ -59,7 +59,8 @@
   const bestOf = id => (G.status === "ok" ? (G.best && G.best[id]) : store.best[id]) || 0;
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const starsHtml = (n, max = 3) => Array.from({ length: max }, (_, i) => `<span class="${i < n ? "" : "star-off"}">⭐</span>`).join("");
+  /* 하트 점수: 5점 만점. ❤️가 점수만큼 켜진다 */
+  const heartsHtml = (n, max = 5) => Array.from({ length: max }, (_, i) => `<span class="${i < n ? "" : "star-off"}">❤️</span>`).join("");
   const levelText = l => "★".repeat(l) + "☆".repeat(3 - l);
   const playId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 
@@ -83,6 +84,20 @@
   }
   const caseNo = c => CASES.indexOf(c) + 1;
 
+  /* ---------- 랭킹(서버가 계산) ---------- */
+  let RK = null;
+  async function apiRanking() {
+    if (!ENDPOINT || !student) return null;
+    try {
+      const q = `gameRanking=1&grade=${encodeURIComponent(student.grade)}&cls=${encodeURIComponent(student.cls)}&number=${encodeURIComponent(student.number)}&studentId=${encodeURIComponent(student.id)}`;
+      const res = await fetch(`${ENDPOINT}?${q}`);
+      if (!res.ok) return null;
+      const d = await res.json();
+      return d && d.status === "ok" ? d : null;
+    } catch (e) { return null; }
+  }
+  const rankChip = () => (RK ? `<span class="chip2">🏆 전교 ${RK.schoolRank}위 · 우리 반 ${RK.classRank}위</span>` : "");
+
   /* ---------- 홈 ---------- */
   function statusBanner() {
     if (G.status === "loading") return `<div class="card status"><b>⏳ 오늘의 상태를 확인하고 있어요…</b></div>`;
@@ -91,7 +106,7 @@
     if (G.status === "error") return `<div class="card status warn"><b>😵 연결이 불안정해요</b><p class="sub">잠시 뒤에 다시 시도해 주세요.</p><button class="btn small" id="retryStatus" type="button">다시 확인</button></div>`;
     if (G.status === "local") return `<div class="card status"><b>🧪 시험 모드</b><p class="sub">구글 시트에 연결되지 않아 기록·보상 없이 연습만 해요.</p></div>`;
     if (!G.learned) return `<div class="card status warn"><b>🔒 오늘 학습을 먼저 끝내면 열려요</b><p class="sub">오늘의 학습 회차를 완료하면 게임이 열려요.</p><a class="btn small" href="${APP_HOME}">학습하러 가기</a></div>`;
-    const chips = `<div class="chips"><span class="chip2">${esc(G.title || "")}</span><span class="chip2">⭐ ${G.totalStars || 0}</span><span class="chip2">🪙 게임 ${G.mileage || 0}P</span></div>`;
+    const chips = `<div class="chips"><span class="chip2">${esc(G.title || "")}</span><span class="chip2">❤️ 총 ${G.totalPoints || 0}점</span><span class="chip2">🪙 게임 ${G.mileage || 0}P</span>${rankChip()}</div>`;
     if (G.playsLeft <= 0) return `<div class="card status"><b>🌙 오늘의 사건을 모두 풀었어요</b><p class="sub">오늘 푼 사건 ${G.plays}/${G.limit}개 · 내일 또 만나요!</p>${chips}<a class="btn small ghost" href="${APP_HOME}#game">게임 허브로</a></div>`;
     return `<div class="card status ok"><b>✅ 오늘 남은 사건 ${G.playsLeft} / ${G.limit}개</b>${chips}</div>`;
   }
@@ -118,10 +133,10 @@
               <span class="case-name">${esc(c.title)}</span><br>
               <span class="case-sub">${esc(c.room)}</span>
             </span>
-            <span class="stars">${canPlay() || bestOf(c.id) ? starsHtml(bestOf(c.id)) : "🔒"}</span>
+            <span class="stars heart-score">${canPlay() || bestOf(c.id) ? (bestOf(c.id) ? heartsHtml(bestOf(c.id)) + `<small>${bestOf(c.id)}점</small>` : heartsHtml(0)) : "🔒"}</span>
           </button>`).join("")}
       </div>
-      <p class="score-note" style="margin-top:16px">별 3개(실수·힌트 없이 해결)를 처음 받으면 마일리지가 쌓여요. 같은 사건을 다시 풀어도 이미 받은 별은 또 받을 수 없어요.</p>`;
+      <p class="score-note" style="margin-top:16px">하트 점수는 1~5점이에요. 실수·힌트 없이 풀면 5점, 실패해도 참여한 판은 1점이고 하루도 참여하지 않으면 0점이에요. 사건마다 가장 높은 점수가 랭킹에 합산돼요.</p>`;
     app.querySelectorAll(".case-card").forEach(b => b.addEventListener("click", () => {
       if (!canPlay()) { toast(G.status === "ok" && G.learned ? "오늘의 사건을 모두 풀었어요. 내일 또 만나요!" : "오늘 학습을 먼저 끝내면 열려요."); return; }
       startCase(b.dataset.id);
@@ -224,7 +239,7 @@
     lower.innerHTML = `
       ${n ? `<div class="picked">선택: ${names.map(esc).join(" ↔ ")}</div>` : `<div class="picked">말풍선을 눌러 두 개를 고르세요 (${n}/2)</div>`}
       <div class="actions">
-        <button class="btn ghost small" id="hintBtn" style="flex:none">💡 힌트${S.hint ? "" : " (별 -1)"}</button>
+        <button class="btn ghost small" id="hintBtn" style="flex:none">💡 힌트${S.hint ? "" : " (점수 -1)"}</button>
         <button class="btn" id="linkBtn" ${n === 2 ? "" : "disabled"}>🔗 이 둘이 모순이야!</button>
       </div>
       ${S.hint ? `<div class="card" style="margin-top:6px">💡 ${esc(S.c.hint)}</div>` : ""}`;
@@ -301,29 +316,30 @@
   }
 
   /* ④ 반전 + 기록 */
-  function computeStars(solved) {
+  /* 하트 점수: 실패 1점(참여 점수), 해결하면 5점에서 실수 1번마다 -1·힌트 사용 -1(최저 2점) */
+  function computePoints(solved) {
     const lost = 3 - S.hearts;
-    return { lost, stars: solved ? Math.max(1, 3 - Math.min(2, lost) - (S.hint ? 1 : 0)) : 0 };
+    return { lost, points: solved ? Math.max(2, 5 - lost - (S.hint ? 1 : 0)) : 1 };
   }
 
   function finish(solved) {
     clearTimers();
     S.solved = solved;
-    const { lost, stars } = computeStars(solved);
-    S.result = { lost, stars };
-    if (stars === 3) run.combo++; else run.combo = 0;
+    const { lost, points } = computePoints(solved);
+    S.result = { lost, points };
+    if (points === 5) run.combo++; else run.combo = 0;
     const c = S.c;
     const note = solved
-      ? (stars === 3 ? "힌트도 실수도 없이 완벽하게 풀었어요!" : `실수 ${lost}번${S.hint ? " · 힌트 사용" : ""}`)
-      : "기회를 모두 썼어요. 정답을 확인해 보세요!";
+      ? (points === 5 ? "힌트도 실수도 없이 완벽하게 풀었어요!" : `실수 ${lost}번${S.hint ? " · 힌트 사용" : ""}`)
+      : "기회를 모두 썼어요. 참여 점수 1점! 정답을 확인해 보세요.";
     document.getElementById("stepBadge").innerHTML = `<span class="step">④ 진상 공개</span>`;
     const a = c.messages[c.pair[0]], b = c.messages[c.pair[1]];
     document.getElementById("lower").innerHTML = `
       <div class="card reveal" style="margin-top:12px">
         <h2>${solved ? "💥 반전! 사건 해결" : "🕵️ 진상은 이랬어요"}</h2>
-        ${solved ? `<div class="big-stars">${[0, 1, 2].map(n => `<span class="${n < stars ? "" : "star-off"}">⭐</span>`).join("")}</div>` : ""}
+        <div class="big-stars">${heartsHtml(points)}</div><div class="point-line"><b>${points}점</b> <span>/ 5점</span></div>
         <div class="score-note">${esc(note)}</div>
-        ${run.combo >= 2 ? `<div class="combo">🔥 ${run.combo}연속 별 3개!</div>` : ""}
+        ${run.combo >= 2 ? `<div class="combo">🔥 ${run.combo}연속 5점!</div>` : ""}
         <div id="rewardLine" class="reward-line">⏳ 기록하고 있어요…</div>
         <p><b>모순된 말</b><br>· ${esc(a.who)}: “${esc(a.text)}”<br>· ${esc(b.who)}: “${esc(b.text)}”</p>
         <p><b>진상</b><br>${esc(c.reveal)}</p>
@@ -336,17 +352,17 @@
   }
 
   async function submitResult() {
-    const { lost, stars } = S.result;
+    const { lost, points } = S.result;
     const id = S.c.id;
     if (isLocal()) {
-      if (stars > (store.best[id] || 0)) { store.best[id] = stars; save(); }
+      if (points > (store.best[id] || 0)) { store.best[id] = points; save(); }
       rewardLine("🧪 시험 모드라 기록하지 않아요.");
       endButtons(true);
       return;
     }
     rewardLine("⏳ 기록하고 있어요…");
     const res = await apiResult({
-      action: "gameResult", game: "chat-detective", caseId: id, stars, lost, hint: S.hint,
+      action: "gameResult", game: "chat-detective", caseId: id, points, lost, hint: S.hint,
       playId: S.pid, studentId: student.id, grade: student.grade, cls: student.cls, number: student.number,
     });
     if (res && res.status === "ok") {
@@ -354,7 +370,7 @@
       if (res.gained > 0) addLocalMileage(res.gained);
       rewardLine(res.gained > 0
         ? `🪙 <b>+${res.gained}P</b> 마일리지가 쌓였어요!`
-        : (stars === 0 ? "이번엔 보상이 없어요. 다시 도전하면 더 잘할 수 있어요!" : (res.newBest ? "이번엔 보상이 없지만 새 기록이에요!" : "이미 받은 별이라 마일리지는 더 쌓이지 않아요.")), res.gained > 0);
+        : (points === 1 ? "참여 점수 1점이 쌓였어요. 다시 도전하면 더 잘할 수 있어요!" : (res.newBest ? "이번엔 마일리지 보상은 없지만 새 최고 점수예요!" : "이미 받은 점수라 이번 사건에서는 점수와 마일리지가 더 늘지 않아요.")), res.gained > 0);
       endButtons(true);
     } else if (res && res.reason === "limit") {
       G = Object.assign({}, G, { playsLeft: 0, plays: res.plays || G.plays });
@@ -410,12 +426,12 @@
     topStatus();
   }
 
-  /* 아직 별 3개를 못 받은 사건 중 다음 것(없으면 다음 번호) */
+  /* 아직 5점을 못 받은 사건 중 다음 것(없으면 다음 번호) */
   function nextCaseId() {
     const pool = casePool(), cur = pool.findIndex(x => x.id === S.c.id);
     for (let k = 1; k <= pool.length; k++) {
       const c = pool[(cur + k) % pool.length];
-      if (bestOf(c.id) < 3) return c.id;
+      if (bestOf(c.id) < 5) return c.id;
     }
     return pool[(cur + 1) % pool.length].id;
   }
@@ -442,6 +458,7 @@
     renderHome();
     G = await apiStatus();
     renderHome();
+    if (G.status === "ok") { RK = await apiRanking(); renderHome(); }
   }
   boot();
 })();

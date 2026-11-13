@@ -509,32 +509,32 @@ function renderMasterGame(){
   const classRows = g.classes.map(c => `<tr>
     <td>${c.grade}학년 ${c.cls}반${c.test ? ' <span class="master-test">테스트</span>' : ""}</td><td>${c.enrolled}</td>
     <td>${c.todayPlayers}명</td><td>${c.players}명 (${masterPct(c.players, c.enrolled)}%)</td><td>${c.todayPlays}</td><td>${c.plays}</td>
-    <td>${c.players ? (Math.round(c.stars / c.players * 10) / 10) : "-"}</td></tr>`).join("");
+    <td>${c.players ? (Math.round(c.points / c.players * 10) / 10) : "-"}</td></tr>`).join("");
   const list = masterGameStudents();
   const stuRows = list.map(s => `<tr>
     <td>${s.grade}-${s.cls}-${s.number}</td><td>${masterEsc(s.name)}</td>
     <td class="${s.todayPlays ? "t-done" : "t-none"}">${s.todayPlays ? "✅ " + s.todayPlays + "판" : "-"}</td>
-    <td>${s.plays}</td><td>${s.days}</td><td>⭐ ${s.stars}</td><td>${masterEsc(s.title)}</td><td>${s.last ? masterEsc(s.last) : "-"}</td></tr>`).join("");
+    <td>${s.plays}</td><td>${s.days}</td><td>❤️ ${s.points}</td><td>${s.test ? "-" : (s.rank ? s.rank + "위" : "-")}</td><td>${s.test ? "-" : (s.classRank ? s.classRank + "위" : "-")}</td><td>${masterEsc(s.title)}</td><td>${s.last ? masterEsc(s.last) : "-"}</td></tr>`).join("");
   const caseRows = g.cases.map(c => `<tr><td>${masterEsc(c.caseId)}</td><td>${c.plays}</td>
-    <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgStars}</td></tr>`).join("");
+    <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgPoints}</td></tr>`).join("");
   body.innerHTML = `${tiles}
     <div class="master-section-title">반별 현황</div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 별</th></tr></thead>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 점수</th></tr></thead>
       <tbody>${classRows || `<tr><td colspan="7" class="master-empty">등록된 학급이 없어요.</td></tr>`}</tbody></table></div>
     <div class="master-section-title">학생별 (${list.length}명)</div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>별 합계</th><th>칭호</th><th>마지막 참여</th></tr></thead>
-      <tbody>${stuRows || `<tr><td colspan="8" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody></table></div>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>점수</th><th>전교 순위</th><th>반 순위</th><th>칭호</th><th>마지막 참여</th></tr></thead>
+      <tbody>${stuRows || `<tr><td colspan="10" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody></table></div>
     <div class="master-section-title">사건별 <span class="master-hint">새 사건을 만들 때 난이도 참고용이에요</span></div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>사건</th><th>푼 판</th><th>해결률</th><th>별 3개 비율</th><th>평균 별</th></tr></thead>
+    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>사건</th><th>푼 판</th><th>해결률</th><th>5점 비율</th><th>평균 점수</th></tr></thead>
       <tbody>${caseRows || `<tr><td colspan="5" class="master-empty">아직 기록이 없어요.</td></tr>`}</tbody></table></div>
-    <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 별 1개 이상 받은 판의 비율 · 테스트 반은 전교 합계에서 빠져요.</p>`;
+    <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 2점 이상(해결한) 판의 비율 · 점수 = 사건마다 가장 높은 점수의 합(참여하지 않으면 0점) · 순위는 점수가 같으면 공동이며 테스트 반은 순위와 전교 합계에서 빠져요.</p>`;
 }
 
 function masterGameCsv(){
   if(!MASTER || !MASTER.game) return;
   const list = masterGameStudents();
-  const lines = [["학년", "반", "번호", "이름", "오늘 판", "누적 판", "참여일", "별 합계", "칭호", "마지막 참여", "게임 마일리지"]]
-    .concat(list.map(s => [s.grade, s.cls, s.number, s.name, s.todayPlays, s.plays, s.days, s.stars, s.title, s.last, s.mileage]));
+  const lines = [["학년", "반", "번호", "이름", "오늘 판", "누적 판", "참여일", "점수", "전교 순위", "반 순위", "칭호", "마지막 참여", "게임 마일리지"]]
+    .concat(list.map(s => [s.grade, s.cls, s.number, s.name, s.todayPlays, s.plays, s.days, s.points, s.test ? "" : (s.rank || ""), s.test ? "" : (s.classRank || ""), s.title, s.last, s.mileage]));
   const csv = "\uFEFF" + lines.map(r => r.map(masterCsvCell).join(",")).join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
