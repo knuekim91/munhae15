@@ -783,6 +783,7 @@ body.pre-login .mileage-chip{ display:none; }
 .master-row{ cursor:pointer; }
 .master-row:hover td{ background:var(--bg-soft); }
 .master-row.active td{ background:var(--accent-dim); }
+.score-table-wrap.master-fit{ max-height:none; }
 .master-grade-row td{ font-weight:800; }
 .master-grade-row.open td{ background:var(--bg-soft); }
 .master-caret{ display:inline-block; width:1.1em; color:var(--text-faint); }

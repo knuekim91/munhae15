@@ -538,15 +538,23 @@ function renderMasterGame(){
     <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgPoints}</td></tr>`).join("");
   body.innerHTML = `${tiles}
     <div class="master-section-title">학년별 현황 <span class="master-hint">학년을 누르면 반이 펼쳐지고, 반을 누르면 그 반 학생 현황이 나와요</span></div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학년 · 반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 점수</th></tr></thead>
+    <div class="score-table-wrap master-fit"><table class="score-table master-table"><thead><tr><th>학년 · 반</th><th>재적</th><th>오늘 참여</th><th>누적 참여</th><th>오늘 판</th><th>누적 판</th><th>참여자 평균 점수</th></tr></thead>
       <tbody>${classRows || `<tr><td colspan="7" class="master-empty">등록된 학급이 없어요.</td></tr>`}</tbody></table></div>
     <div class="master-section-title" id="masterGameStudentTitle">학생별${gv.cls ? " · " + gv.cls.replace("-", "학년 ") + "반" : ""} (${list.length}명)${gv.cls ? ' <button type="button" class="btn btn-ghost master-btn" id="masterGameClsClear">전체 보기</button>' : ""}</div>
-    <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>점수</th><th>전교 순위</th><th>반 순위</th><th>칭호</th><th>마지막 참여</th></tr></thead>
+    <div class="score-table-wrap" id="masterGameStudentWrap"><table class="score-table master-table"><thead><tr><th>학번</th><th>이름</th><th>오늘</th><th>누적 판</th><th>참여일</th><th>점수</th><th>전교 순위</th><th>반 순위</th><th>칭호</th><th>마지막 참여</th></tr></thead>
       <tbody>${stuRows || `<tr><td colspan="10" class="master-empty">조건에 맞는 학생이 없어요.</td></tr>`}</tbody></table></div>
     <div class="master-section-title">사건별 <span class="master-hint">새 사건을 만들 때 난이도 참고용이에요</span></div>
     <div class="score-table-wrap"><table class="score-table master-table"><thead><tr><th>사건</th><th>푼 판</th><th>해결률</th><th>5점 비율</th><th>평균 점수</th></tr></thead>
       <tbody>${caseRows || `<tr><td colspan="5" class="master-empty">아직 기록이 없어요.</td></tr>`}</tbody></table></div>
     <p class="master-legend">오늘 = 서버 기준 오늘(${masterEsc(g.today)}) · 판 = 해결하든 실패하든 사건 하나를 끝낸 횟수 · 해결률 = 2점 이상(해결한) 판의 비율 · 점수 = 사건마다 가장 높은 점수의 합(참여하지 않으면 0점) · 순위는 점수가 같으면 공동이며 테스트 반은 순위와 전교 합계에서 빠져요.</p>`;
+  // 학생 표 높이: 가장 학생 수가 많은 반을 한 화면에 다 보여 줄 만큼(그보다 많은 '전체 보기'만 스크롤)
+  const wrap = document.getElementById("masterGameStudentWrap");
+  const maxN = g.classes.reduce((m, c) => Math.max(m, c.enrolled || 0), 0);
+  const trs = wrap && wrap.querySelectorAll("tbody tr");
+  const th = wrap && wrap.querySelector("thead");
+  if(wrap && maxN && trs.length && th){
+    wrap.style.maxHeight = (th.offsetHeight + trs[0].offsetHeight * maxN + 2) + "px";
+  }
   const act = (el, fn) => {
     el.addEventListener("click", fn);
     el.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fn(); } });
