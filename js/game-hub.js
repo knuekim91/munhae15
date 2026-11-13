@@ -150,7 +150,7 @@ function gameRankCard(r){
     ? `<div class="game-rank-me">🧪 테스트 반이라 실제 랭킹에는 들어가지 않아요. 지금 <b>❤️ ${r.myPoints}점</b>이면 전교 ${r.schoolRank}위쯤이에요(참고).</div>`
     : r.myPlayed
     ? `<div class="game-rank-me">내 순위 <b>전교 ${r.schoolRank}위</b> / ${r.schoolTotal}명 · <b>우리 반 ${r.classRank}위</b> / ${r.classTotal}명 · ❤️ ${r.myPoints}점</div>`
-    : `<div class="game-rank-me">아직 참여 기록이 없어 <b>0점</b>이에요. 오늘 한 판만 해도 1점부터 시작해요! (순위 ${r.schoolRank}위 · 공동)</div>`;
+    : `<div class="game-rank-me">아직 참여 기록이 없어 <b>0점</b>이에요. 오늘 한 판만 해도 1점부터 시작하고, 점수가 생기면 순위가 매겨져요!</div>`;
   const rows = list.length
     ? list.map(x => `<tr><td class="rk">${x.rank <= 3 ? ["🥇", "🥈", "🥉"][x.rank - 1] : x.rank}</td><td>${tab === "school" ? gameEsc(x.grade + "-" + x.cls) + " " : ""}${gameEsc(x.name)}${tab === "class" ? " <small>" + gameEsc(x.number) + "번</small>" : ""}</td><td class="pt">${x.points}점</td></tr>`).join("")
     : `<tr><td colspan="3" class="game-rank-empty">아직 랭킹이 없어요. 첫 번째 주인공이 되어 보세요!</td></tr>`;

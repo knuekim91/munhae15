@@ -514,7 +514,7 @@ function renderMasterGame(){
   const stuRows = list.map(s => `<tr>
     <td>${s.grade}-${s.cls}-${s.number}</td><td>${masterEsc(s.name)}</td>
     <td class="${s.todayPlays ? "t-done" : "t-none"}">${s.todayPlays ? "✅ " + s.todayPlays + "판" : "-"}</td>
-    <td>${s.plays}</td><td>${s.days}</td><td>❤️ ${s.points}</td><td>${s.test ? "-" : (s.rank ? s.rank + "위" : "-")}</td><td>${s.test ? "-" : (s.classRank ? s.classRank + "위" : "-")}</td><td>${masterEsc(s.title)}</td><td>${s.last ? masterEsc(s.last) : "-"}</td></tr>`).join("");
+    <td>${s.plays}</td><td>${s.days}</td><td>❤️ ${s.points}</td><td>${s.test ? "테스트" : (s.rank ? s.rank + "위" : "-")}</td><td>${s.test ? "테스트" : (s.classRank ? s.classRank + "위" : "-")}</td><td>${masterEsc(s.title)}</td><td>${s.last ? masterEsc(s.last) : "-"}</td></tr>`).join("");
   const caseRows = g.cases.map(c => `<tr><td>${masterEsc(c.caseId)}</td><td>${c.plays}</td>
     <td>${masterPct(c.solved, c.plays)}%</td><td>${masterPct(c.perfect, c.plays)}%</td><td>${c.avgPoints}</td></tr>`).join("");
   body.innerHTML = `${tiles}

@@ -1936,9 +1936,10 @@ function getGameRanking_() {
     var s = sum[id];
     people.push({ id: id, grade: g, cls: cl, number: n, name: String(rosterValues[r][3] || ""), points: s ? gamePointSum_(s.best) : 0, plays: s ? s.plays : 0 });
   }
-  var rankOf = function (list) {          // 공동 순위: 나보다 점수가 높은 사람 수 + 1
+  var rankOf = function (list) {          // 공동 순위: 나보다 점수가 높은 사람 수 + 1 (0점·미참여는 순위 없음 = 0)
     var by = {};
     list.forEach(function (p) {
+      if (p.points <= 0) { by[p.id] = 0; return; }
       var higher = 0;
       list.forEach(function (q) { if (q.points > p.points) higher++; });
       by[p.id] = higher + 1;
@@ -2007,7 +2008,7 @@ function handleGameRanking_(p) {
   if (isTest) {                           // 시험 삼아 해 보는 용도로, "이 점수라면 몇 위인지"만 참고로 알려 준다
     var higher = 0;
     Object.keys(rk.byId).forEach(function (k) { if (rk.byId[k].points > myPoints) higher++; });
-    me = { rank: higher + 1, classRank: 0, classTotal: 0 };
+    me = { rank: myPoints > 0 ? higher + 1 : 0, classRank: 0, classTotal: 0 };
   }
   var key = student.grade + "-" + student.cls;
   return {
