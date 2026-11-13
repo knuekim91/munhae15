@@ -466,6 +466,27 @@ function renderConfusable(c){
   return card;
 }
 
+/* 빈칸 선택 효과: 정답이면 반짝이며 톡 튀고, 오답이면 한 번 흔들린다 */
+function playBlankFx(btn, ok){
+  btn.classList.remove("fx-correct","fx-wrong");
+  void btn.offsetWidth;                      // 같은 버튼을 다시 눌러도 애니메이션이 다시 시작되게
+  btn.classList.add(ok ? "fx-correct" : "fx-wrong");
+  if(!ok || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const marks = ["✦","✧","✦","✧","✦","✧","✦","✧"];
+  marks.forEach((m, i) => {
+    const sp = document.createElement("span");
+    sp.className = "blank-spark";
+    sp.textContent = m;
+    const ang = (Math.PI * 2 * i) / marks.length + (Math.random() - 0.5) * 0.5;
+    const r = 30 + Math.random() * 14;
+    sp.style.setProperty("--dx", Math.round(Math.cos(ang) * r) + "px");
+    sp.style.setProperty("--dy", Math.round(Math.sin(ang) * r * 0.8) + "px");
+    sp.style.animationDelay = (i % 3) * 40 + "ms";
+    btn.appendChild(sp);
+    setTimeout(() => sp.remove(), 900);
+  });
+}
+
 function renderCheckpoint(cp, num, tracker){
   const card = document.createElement("div");
   card.className = "card checkpoint";
@@ -491,8 +512,8 @@ function renderCheckpoint(cp, num, tracker){
         b.addEventListener("click", () => {
           const correctIdx = cp.answers[i];
           [...group.children].forEach(c => c.classList.remove("selected","correct","incorrect"));
-          if(oi === correctIdx){ b.classList.add("correct"); }
-          else{ b.classList.add("incorrect"); group.children[correctIdx].classList.add("correct"); }
+          if(oi === correctIdx){ b.classList.add("correct"); playBlankFx(b, true); }
+          else{ b.classList.add("incorrect"); group.children[correctIdx].classList.add("correct"); playBlankFx(b, false); }
           answeredBlanks.add(i);
           if(tracker && answeredBlanks.size >= blankCount) tracker.done.add(num);
         });
